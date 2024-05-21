@@ -90,7 +90,7 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
     dwf.FDwfAnalogImpedanceReferenceSet(hdwf, c_double(reference)) # reference resistor value in Ohms
     dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(start)) # frequency in Hertz
-    dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(1)) # 1V amplitude = 2V peak2peak signal
+    dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(voltage)) # 1V amplitude = 2V peak2peak signal
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(1)) # start
     time.sleep(2)
 
@@ -98,6 +98,11 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     rgRs = [0.0]*steps
     rgXs = [0.0]*steps
     rgPhase = [0.0]*steps
+    rgZ = [0.0]*steps
+    rgRv = [0.0]*steps # real voltage
+    rgIv = [0.0]*steps # imag voltage
+    rgRc = [0.0]*steps # real current
+    rgIc = [0.0]*steps # imag current
 
     for i in range(steps):
         hz = stop * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop/start)) # exponential frequency steps
@@ -117,21 +122,38 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
         resistance = c_double()
         reactance = c_double()
         phase = c_double()
+        impedance = c_double()
+        realVoltage = c_double()
+        imagVoltage = c_double()
+        realCurrent = c_double()
+        imagCurrent = c_double()
 
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceResistance, byref(resistance))
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceReactance, byref(reactance))
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceImpedancePhase , byref(phase))
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceImpedance, byref(impedance))
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceVreal, byref(realVoltage))      
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceVimag, byref(imagVoltage)) 
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIreal, byref(realCurrent))      
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIimag, byref(imagCurrent))                
         # add other measurements here (impedance, impedanceVReal impedanceVImag, impedancelreal, impedancelimag)
         
 
         rgRs[i] = abs(resistance.value) # absolute value for logarithmic plot
         rgXs[i] = abs(reactance.value)
         rgPhase[i] = (phase.value * 180)/3.14159265358979
+        rgZ[i] = abs(impedance.value)
+        rgRv[i] = abs(realVoltage.value)
+        rgIv[i] = abs(imagVoltage.value)
+        rgRc[i] = abs(realCurrent.value)
+        rgIc[i] = abs(imagCurrent.value)
 
 
         now_time = now + '_at_' + current_time + '_data'
         data = pd.DataFrame({
-                             'Frequency(Hz)': rgHz,'Absolute Resistance(Ohm)': rgRs, 'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase})
+                             'Frequency(Hz)': rgHz,'Impedance(Ohm)' : rgZ, 'Absolute Resistance(Ohm)': rgRs, 
+                             'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase, 'Real Voltage(volts)': rgRv, 'Imaginary Voltage(volts)': rgIv, 
+                              'Real Current(amps)': rgRc, 'Imaginary Current(amps)': rgIc })
 
         # Save the DataFrame to a CSV file
         csv_filename = os.path.join(output_dir, f"Impedance_Data_{now}_{current_time}.csv")
@@ -293,7 +315,7 @@ tk.Label(root, text="Amplitude").grid(row=2, column=0)
 amplitude_var = tk.StringVar()
 amplitude_dropdown = ttk.Combobox(root, textvariable=amplitude_var, values=["2 V", "1 V", "500 mV", "200 mV", "100 mV", "50 mV", "20 mV", "10 mV", "5 mV", "0 V"])
 amplitude_dropdown.grid(row=3, column=0)
-amplitude_dropdown.current(0)  # Default selection
+amplitude_dropdown.current(1)  # Default selection
 
 # Reference resistance dropdown
 tk.Label(root, text="Reference resistance").grid(row=2, column=1)
