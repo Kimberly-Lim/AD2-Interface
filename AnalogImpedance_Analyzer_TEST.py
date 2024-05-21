@@ -39,8 +39,23 @@ root.title("Measurement Settings")
 
 # Set the window size
 root.geometry("600x400")
+
+# Function to save measurement data
+def save_measurement_data(filename, data, steps, start_freq, stop_freq, amplitude, reference_resistance, measure_interval):
+    header = [
+        'Steps', 'Start Frequency (Hz)', 'Stop Frequency (Hz)', 'Amplitude', 
+        'Reference Resistance (Ohms)', 'Measurement Interval (Hours)'
+    ]
+    header_values = [steps, start_freq, stop_freq, amplitude, reference_resistance, measure_interval]
+    
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerow(header_values)
+        writer.writerow(['Frequency (Hz)', 'Real Part (Ohms)', 'Imaginary Part (Ohms)'])
+        writer.writerows(data)
         
-#How the impedance Anaylyzer actully works and makes Measurments
+#Function to perform the measurement
 def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     #Capture Current Date
     current_date = datetime.now()
@@ -83,7 +98,6 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
 
     sts = c_byte()
 
-
     print("Reference: "+str(reference)+" Ohm  Frequency: "+str(start)+" Hz ... "+str(stop/1e3)+" kHz for nanofarad capacitors")
     dwf.FDwfAnalogImpedanceReset(hdwf)
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
@@ -97,6 +111,8 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     rgRs = [0.0]*steps
     rgXs = [0.0]*steps
     rgPhase = [0.0]*steps
+
+    print("Reading data...")
 
     for i in range(steps):
         hz = stop * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop/start)) # exponential frequency steps
@@ -127,10 +143,23 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
         rgXs[i] = abs(reactance.value)
         rgPhase[i] = (phase.value * 180)/3.14159265358979
 
-
-        now_time = now + '_at_' + current_time + '_data'
         data = pd.DataFrame({
                              'Frequency(Hz)': rgHz,'Absolute Resistance(Ohm)': rgRs, 'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase})
+
+        now_time = now + '_at_' + current_time + '_data'
+
+        # Capture values from the GUI
+        steps = int(steps_entry.get())
+        start_freq = float(start_freq_entry.get())
+        stop_freq = float(stop_freq_entry.get())
+        amplitude = amplitude_var.get()
+        reference_resistance = resistance_var.get()
+        measure_interval = int(measure_interval_entry.get())
+
+        filename = os.path.join(output_dir, f"measurement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+        save_measurement_data(filename, data, steps, start_freq, stop_freq, amplitude, reference_resistance, measure_interval)
+
+        # data = pd.DataFrame({'Frequency(Hz)': rgHz,'Absolute Resistance(Ohm)': rgRs, 'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase})
 
         # Save the DataFrame to a CSV file
         csv_filename = os.path.join(output_dir, f"Impedance_Data_{now}_{current_time}.csv")
@@ -215,13 +244,10 @@ def measure():
 # Function to handle Start and Stop
 def staart():
     print("Measurement started")
-    
 
 def stoop():
     print("Measurement stopped")
     print("steps.get")
-
-    
 
 # Steps entry
 tk.Label(root, text="Steps").grid(row=0, column=0)
@@ -229,7 +255,6 @@ steps = tk.StringVar(value="151")  # Default value
 steps.trace_add("write", update_steps)  # Trace changes
 steps_entry = ttk.Entry(root, textvariable=steps)
 steps_entry.grid(row=1, column=0)
-
 
 # Start Frequency entry
 tk.Label(root, text="Start Freq(Hz)").grid(row=0, column=1)
