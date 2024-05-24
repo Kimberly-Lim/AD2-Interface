@@ -1,4 +1,5 @@
 
+
 """
    DWF Python Example
    Author:  Digilent, Inc.
@@ -21,12 +22,14 @@ import tkinter as tk
 from tkinter import ttk
 import os
 import csv 
+import threading
 
 
 steps = 151
-start = 1e2
-stop = 1e6
+startFrequency = 1e2
+stopFrequency = 1e6
 reference = 1e3
+makeMeasureTime = 6
 
 # creation of directory
 output_dir = "Impedance_Data_Collection"
@@ -39,10 +42,10 @@ root = tk.Tk()
 root.title("Measurement Settings")
 
 # Set the window size
-root.geometry("600x400")
+root.geometry("630x400")
         
 #How the impedance Anaylyzer actully works and makes Measurments
-def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
+def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, makeMeasureTime):
     #Capture Current Date
     current_date = datetime.now()
     nowY = current_date.year
@@ -85,11 +88,11 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     sts = c_byte()
 
 
-    print("Reference: "+str(reference)+" Ohm  Frequency: "+str(start)+" Hz ... "+str(stop/1e3)+" kHz for nanofarad capacitors")
+    print("Reference: "+str(reference)+" Ohm  Frequency: "+str(startFrequency)+" Hz ... "+str(stopFrequency/1e3)+" kHz for nanofarad capacitors")
     dwf.FDwfAnalogImpedanceReset(hdwf)
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
     dwf.FDwfAnalogImpedanceReferenceSet(hdwf, c_double(reference)) # reference resistor value in Ohms
-    dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(start)) # frequency in Hertz
+    dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(startFrequency)) # frequency in Hertz
     dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(voltage)) # 1V amplitude = 2V peak2peak signal
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(1)) # start
     time.sleep(2)
@@ -105,7 +108,7 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
     rgIc = [0.0]*steps # imag current
 
     for i in range(steps):
-        hz = stop * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop/start)) # exponential frequency steps
+        hz = stopFrequency * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stopFrequency/startFrequency)) # exponential frequency steps
         print("Step: "+str(i)+" "+str(hz)+"Hz")
         rgHz[i] = hz
         dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
@@ -148,20 +151,6 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
         rgRc[i] = abs(realCurrent.value)
         rgIc[i] = abs(imagCurrent.value)
 
-    #     # progress bar implementation
-    # p = ttk.Progressbar(root, orient="horizontal", length=200, mode="determinate", takefocus=True, maximum=100)
-    # p['value'] = 0
-    # p.pack()
-
-    # def start():
-    #     if p['value'] < 100:
-    #         p['value'] += 30
-
-    #         root.after(1000, start)
-
-    #     root.after(1000, start)
-    #     root.mainloop()
-
         now_time = now + '_at_' + current_time + '_data'
         data = pd.DataFrame({
                              'Frequency(Hz)': rgHz,'Impedance(Ohm)' : rgZ, 'Absolute Resistance(Ohm)': rgRs, 
@@ -200,16 +189,12 @@ def makeMeasurement(steps, start, stop, reference, voltage, makeMeasureTime):
 def update_steps(*args):
     global steps_int
     try:
-
         # Convert the entry to an integer
         steps_int = int(steps.get())
-
         print("Updated Steps to:", steps_int)
 
     except ValueError:
-
         print("Invalid input for steps. Please enter an integer.")
-
         steps.set("151")  # Reset to default if invalid
 
 #Extracts Start value from GUI
@@ -219,29 +204,22 @@ def update_start(*args):
 
         # Convert the entry to an integer
         start_int = int(startF.get())
-
         print("Updated Start to:", start_int)
 
     except ValueError:
-
         print("Invalid input for start. Please enter an integer.")
-
         startF.set("100")  # Reset to default if invalid
 
 #Extracts Stop value from GUI
 def update_stop(*args):
     global stop_int
     try:
-
         # Convert the entry to an integer
         stop_int = int(stopF.get())
-
         print("Updated Stop to:", stop_int)
 
     except ValueError:
-
         print("Invalid input for start. Please enter an integer.")
-
         stopF.set("15000000")  # Reset to default if invalid
 
 # Function to update amplitude
@@ -274,31 +252,53 @@ def update_resistance(*args):
     }
     reference = resistance_values.get(resistance_var.get(), 1e3)
 
+    #     # Add code to perform measurement and update progress
+    # for i in range(steps):
+    #     time.sleep(makeMeasureTime / steps)  # Simulate measurement time
+    #     pb['value'] += (100 / steps)
+    #     value_label['text'] = updateProgressLabel()
+    #     root.update_idletasks()
+
 # Function to start the measurement
 def measure():
     # Update global variables with the selected values
-    update_start()
-    update_stop()
-    update_amplitude()
-    update_resistance()
+    steps = int(steps_entry.get())
+    start = float(start_freq_entry.get())
+    stopFrequency = float(stop_freq_entry.get())
+    reference = float(resistance_var.get().split()[0])
+    amplitude = float(amplitude_var.get().split()[0])
     measure_interval = float(measure_interval_entry.get())
-    # Call the function to make the measurement
-    makeMeasurement(int(steps.get()), start, stop, reference, amplitude, measure_interval)
 
-# def measure():
-#     makeMeasurement(
-#         int(steps.get()), int(startF.get()), int(stopF.get()), update_amplitude(), update_resistance())
+    # # Call the measurement function in a separate thread
+    # def run_measurement():
+    #     frequencies, resistances = makeMeasurement(steps, start, stopFrequency, reference, amplitude, makeMeasureTime)
+    #     root.after(0, lambda: update_plot(frequencies, resistances))
+    
+    # threading.Thread(target=makeMeasurement, args=(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime)).start()
+    # threading.Thread(target=run_measurement).start()
+    # Call the function to make the measurement
+    makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)
+
+    # Reset progress bar
+    pb['value'] = 0
+    value_label['text'] = updateProgressLabel()
+
+    # def update_plot(frequencies, resistances):
+    #     plt.figure()
+    #     plt.plot(frequencies, resistances)
+    #     plt.xscale('log')
+    #     plt.yscale('log')
+    #     plt.xlabel('Frequency (Hz)')
+    #     plt.ylabel('Resistance (Ohms)')
+    #     plt.title('Frequency vs Resistance')
+    #     plt.show()
 
 # Function to handle Start and Stop
 def staart():
     print("Measurement started")
-    
 
 def stoop():
     print("Measurement stopped")
-    print("steps.get")
-
-    
 
 # Steps entry
 tk.Label(root, text="Steps").grid(row=0, column=0)
@@ -306,7 +306,6 @@ steps = tk.StringVar(value="151")  # Default value
 steps.trace_add("write", update_steps)  # Trace changes
 steps_entry = ttk.Entry(root, textvariable=steps)
 steps_entry.grid(row=1, column=0)
-
 
 # Start Frequency entry
 tk.Label(root, text="Start Freq(Hz)").grid(row=0, column=1)
@@ -343,17 +342,49 @@ measure_interval_entry = ttk.Entry(root)
 measure_interval_entry.grid(row=3, column=2)
 measure_interval_entry.insert(0, "4")  # Default value
 
-# Start and Stop buttons
-start_button = tk.Button(root, text="Start", bg="green", command=measure)
-start_button.grid(row=4, column=0)
-stop_button = tk.Button(root, text="Stop", bg="red", command=stoop)
-stop_button.grid(row=4, column=1)
+# progress bar text
+def updateProgressLabel():
+    return f"Current Progress: {pb['value']}%"
+
+def progress():
+    if pb['value'] < 100:
+        pb['value'] += 20
+        value_label['text'] = updateProgressLabel()
+    # else:
+    #     # showinfo(message='The progress completed!')
+
+def stop():
+    pb.stop()
+    value_label['text'] = updateProgressLabel()
+
+# progressbar
+pb = ttk.Progressbar(
+    root,
+    orient='horizontal',
+    mode='determinate',
+    length=280
+)
+# place the progressbar
+pb.grid(column=0, row=5, columnspan=2, padx=10, pady=20)
+
+# label
+value_label = ttk.Label(root, text=updateProgressLabel())
+value_label.grid(column=0, row=7, columnspan=2)
+
+# start button
+start_button = ttk.Button(
+    root,
+    text='Start',
+    command=measure
+)
+start_button.grid(column=0, row=6, padx=10, pady=10, sticky=tk.E)
+
+stop_button = ttk.Button(
+    root,
+    text='Stop',
+    command=stoop
+)
+stop_button.grid(column=1, row=6, padx=10, pady=10, sticky=tk.W)
 
 # Run the application
 root.mainloop()
-
-plt.plot(rgHz, rgRs, rgHz, rgXs)
-ax = plt.gca()
-ax.set_xscale('log')
-ax.set_yscale('log')
-plt.show()
