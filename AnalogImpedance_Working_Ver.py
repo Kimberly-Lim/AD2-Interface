@@ -24,7 +24,7 @@ import os
 import csv 
 import threading
 
-
+progressCounter = 0
 steps = 151
 startFrequency = 1e2
 stopFrequency = 1e6
@@ -108,13 +108,16 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
     rgIc = [0.0]*steps # imag current
 
     for i in range(steps):
-        hz = stopFrequency * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stopFrequency/startFrequency)) # exponential frequency steps
-        print("Step: "+str(i)+" "+str(hz)+"Hz")
-        rgHz[i] = hz
-        dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
+        for step in range(steps):
+            hz = stopFrequency * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stopFrequency/startFrequency)) # exponential frequency steps
+            print("Step: "+str(i)+" "+str(hz)+"Hz")
+            rgHz[i] = hz
+            dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
         # if settle time is required for the DUT, wait and restart the acquisition
         # time.sleep(0.01) 
         # dwf.FDwfAnalogInConfigure(hdwf, c_int(1), c_int(1))
+            updateProgress(step, steps)
+
         while True:
             if dwf.FDwfAnalogImpedanceStatus(hdwf, byref(sts)) == 0:
                 dwf.FDwfGetLastErrorMsg(szerr)
@@ -252,13 +255,6 @@ def update_resistance(*args):
     }
     reference = resistance_values.get(resistance_var.get(), 1e3)
 
-    #     # Add code to perform measurement and update progress
-    # for i in range(steps):
-    #     time.sleep(makeMeasureTime / steps)  # Simulate measurement time
-    #     pb['value'] += (100 / steps)
-    #     value_label['text'] = updateProgressLabel()
-    #     root.update_idletasks()
-
 # Function to start the measurement
 def measure():
     # Update global variables with the selected values
@@ -269,13 +265,6 @@ def measure():
     amplitude = float(amplitude_var.get().split()[0])
     measure_interval = float(measure_interval_entry.get())
 
-    # # Call the measurement function in a separate thread
-    # def run_measurement():
-    #     frequencies, resistances = makeMeasurement(steps, start, stopFrequency, reference, amplitude, makeMeasureTime)
-    #     root.after(0, lambda: update_plot(frequencies, resistances))
-    
-    # threading.Thread(target=makeMeasurement, args=(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime)).start()
-    # threading.Thread(target=run_measurement).start()
     # Call the function to make the measurement
     makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)
 
@@ -296,6 +285,7 @@ def measure():
 # Function to handle Start and Stop
 def staart():
     print("Measurement started")
+
 
 def stoop():
     print("Measurement stopped")
@@ -346,12 +336,18 @@ measure_interval_entry.insert(0, "4")  # Default value
 def updateProgressLabel():
     return f"Current Progress: {pb['value']}%"
 
-def progress():
-    if pb['value'] < 100:
-        pb['value'] += 20
-        value_label['text'] = updateProgressLabel()
-    # else:
+# def progress():
+#     if pb['value'] < 100:
+#         pb['value'] += 20
+#         value_label['text'] = updateProgressLabel()
+#     # else:
     #     # showinfo(message='The progress completed!')
+
+# Function to update the progress bar value
+def updateProgress(current_step, total_steps):
+    if pb['value'] < 100:
+        pb['value'] += (current_step / total_steps) * 100
+        value_label['text'] = updateProgressLabel()
 
 def stop():
     pb.stop()
@@ -372,17 +368,13 @@ value_label = ttk.Label(root, text=updateProgressLabel())
 value_label.grid(column=0, row=7, columnspan=2)
 
 # start button
-start_button = ttk.Button(
-    root,
-    text='Start',
-    command=measure
-)
+start_button = ttk.Button(root, text='Start', command=lambda: threading.Thread(target=makeMeasurement, args=(steps, startFrequency, stopFrequency, reference, 1, 6)).start())
 start_button.grid(column=0, row=6, padx=10, pady=10, sticky=tk.E)
 
 stop_button = ttk.Button(
     root,
     text='Stop',
-    command=stoop
+    command=stop
 )
 stop_button.grid(column=1, row=6, padx=10, pady=10, sticky=tk.W)
 
