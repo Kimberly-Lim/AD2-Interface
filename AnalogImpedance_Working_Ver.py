@@ -60,7 +60,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
     t = time.localtime()
     current_time = time.strftime("%H-%M-%S", t)
 
-
     if sys.platform.startswith("win"):
         dwf = cdll.LoadLibrary("dwf.dll")
     elif sys.platform.startswith("darwin"):
@@ -214,6 +213,9 @@ frequency_dict = {
     "15 MHz": 15000000
 }
 
+startFrequency = None
+stopFrequency = None 
+
 def on_select_start(event):
     global startFrequency
     global start_numeric_value
@@ -263,7 +265,6 @@ def update_resistance(*args):
     }
     reference = resistance_values.get(resistance_var.get(), 1e3)
 
-
 # Function to start the measurement
 def measure():
     global startFrequency, stopFrequency
@@ -271,7 +272,6 @@ def measure():
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
     stopFrequency = on_select_stop(stopFrequency)
-    # stopFrequency = float(stopF_var.get().split()[0])
     reference = float(resistance_var.get().split()[0])
     amplitude = float(amplitude_var.get().split()[0])
     measure_interval = float(measure_interval_entry.get())
@@ -292,7 +292,7 @@ def stoop():
 
 # Steps entry
 tk.Label(root, text="Steps").grid(row=0, column=0)
-steps = tk.StringVar(value="5")  # Default value
+steps = tk.StringVar(value="151")  # Default value
 steps.trace_add("write", update_steps)  # Trace changes
 steps_entry = ttk.Entry(root, textvariable=steps)
 steps_entry.grid(row=1, column=0)
@@ -302,12 +302,14 @@ tk.Label(root, text="Start Frequency").grid(row=0, column=1)
 startF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
 startF_dropdown.bind("<<ComboboxSelected>>", on_select_start)
 startF_dropdown.grid(row=1, column=1)
+startF_dropdown.current(list(frequency_dict.keys()).index("100 Hz"))  # Set default value to 1 kHz
 
 # Stop Frequency entry
 tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
 stopF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
 stopF_dropdown.bind("<<ComboboxSelected>>", on_select_stop)
 stopF_dropdown.grid(row=1, column=2)
+stopF_dropdown.current(list(frequency_dict.keys()).index("1 MHz"))  # Set default value to 1 MHz
 
 # Amplitude dropdown
 tk.Label(root, text="Amplitude").grid(row=2, column=0)
