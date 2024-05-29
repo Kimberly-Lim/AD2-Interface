@@ -26,11 +26,11 @@ import csv
 import threading
 
 
-steps = 151
-startFrequency = 1e2
-stopFrequency = 1e6
-reference = 1e3
-makeMeasureTime = 6
+# steps = 151
+# startFrequency = 1e2
+# stopFrequency = 1e6
+# reference = 1e3
+# makeMeasureTime = 6
 
 # creation of directory
 output_dir = "Impedance_Data_Collection"
@@ -74,7 +74,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
 
     hdwf = c_int()
     szerr = create_string_buffer(512)
-    print("Opening first device")
+    print("Opening first device\n")
     dwf.FDwfDeviceOpen(c_int(-1), byref(hdwf))
 
     if hdwf.value == hdwfNone.value:
@@ -88,8 +88,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
 
     sts = c_byte()
 
-
-    print("Reference: "+str(reference)+" Ohm  Frequency: "+str(startFrequency)+" Hz ... "+str(stopFrequency/1e3)+" kHz for nanofarad capacitors")
+    # print("Reference: "+str(reference)+" Ohm  Frequency: "+str(startFrequency)+" Hz ... "+str(stopFrequency/1e3)+" kHz for nanofarad capacitors")
     dwf.FDwfAnalogImpedanceReset(hdwf)
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
     dwf.FDwfAnalogImpedanceReferenceSet(hdwf, c_double(reference)) # reference resistor value in Ohms
@@ -153,6 +152,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
         rgIc[i] = abs(imagCurrent.value)
 
         now_time = now + '_at_' + current_time + '_data'
+
         data = pd.DataFrame({
                              'Frequency(Hz)': rgHz,'Impedance(Ohm)' : rgZ, 'Absolute Resistance(Ohm)': rgRs, 
                              'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase, 'Real Voltage(volts)': rgRv, 'Imaginary Voltage(volts)': rgIv, 
@@ -199,37 +199,67 @@ def update_steps(*args):
     except ValueError as e:
         print("Invalid input for steps. Please enter an integer")
 
-   # Function to update start frequency
-def update_start_frequency(*args):
-    global startFrequency 
-    startFrequency = startF_var.get()
-    startFrequency_values = {
-        "1 Hz" : 1,
-        "10 Hz" : 10,
-        "100 Hz" : 100,
-        "1000 Hz" : 1000,
-        "10000 Hz" : 10000,
-        "100000 Hz" : 100000,
-        "1 MHz" : 1000000,
-        "10 MHz" : 10000000,
-        "15 MHz" : 15000000
-    }   
+# Dictionary for frequency values
+frequency_dict = {
+    "1 Hz": 1,
+    "10 Hz": 10,
+    "100 Hz": 100,
+    "1 kHz": 1000,
+    "10 kHz": 10000,
+    "100 kHz": 100000,
+    "1 MHz": 1000000,
+    "10 MHz": 10000000,
+    "15 MHz": 15000000
+}
 
-   # Function to update stop frequency
-def update_stop_frequency(*args):
-    global stopFrequency 
-    stopFrequency = stopF_var.get()
-    stopFrequency_values = {
-        "1 Hz" : 1,
-        "10 Hz" : 10,
-        "100 Hz" : 100,
-        "1000 Hz" : 1000,
-        "10000 Hz" : 10000,
-        "100000 Hz" : 100000,
-        "1 MHz" : 1000000,
-        "10 MHz" : 10000000,
-        "15 MHz" : 15000000
-    }     
+def on_select_start(event):
+    global startFrequency
+    startFrequency = startF_dropdown.get()
+    numeric_value = frequency_dict[startFrequency]
+    print(f"Selected: {startFrequency}, Numeric Value: {numeric_value}")
+
+    return int(startFrequency)
+
+# Function to handle selection for stop frequency
+def on_select_stop(event):
+    global stopFrequency
+    stopFrequency = stopF_dropdown.get()
+    numeric_value = frequency_dict[stopFrequency]
+    print(f"Selected: {stopFrequency}, Numeric Value: {numeric_value}")
+
+    return int(stopFrequency)
+
+#    # Function to update start frequency
+# def update_start_frequency(*args):
+#     global startFrequency 
+#     startFrequency = startF_var.get()
+#     startFrequency_values = {
+#         "1 Hz" : 1,
+#         "10 Hz" : 10,
+#         "100 Hz" : 100,
+#         "1 kHz" : 1000,
+#         "10 kHz" : 10000,
+#         "100 kHz" : 100000,
+#         "1 MHz" : 1000000,
+#         "10 MHz" : 10000000,
+#         "15 MHz" : 15000000
+#     }   
+
+#    # Function to update stop frequency
+# def update_stop_frequency(*args):
+#     global stopFrequency 
+#     stopFrequency = stopF_var.get()
+#     stopFrequency_values = {
+#         "1 Hz" : 1,
+#         "10 Hz" : 10,
+#         "100 Hz" : 100,
+#         "1 kHz" : 1000,
+#         "10 kHz" : 10000,
+#         "100 kHz" : 100000,
+#         "1 MHz" : 1000000,
+#         "10 MHz" : 10000000,
+#         "15 MHz" : 15000000
+#     }     
 
 # Function to update amplitude
 def update_amplitude(*args):
@@ -261,18 +291,24 @@ def update_resistance(*args):
     }
     reference = resistance_values.get(resistance_var.get(), 1e3)
 
+# # Global variables to store selected frequencies
+# startFrequency = None
+# stopFrequency = None
+
 # Function to start the measurement
 def measure():
+    global startFrequency, stopFrequency
     # Update global variables with the selected values
     steps = int(steps_entry.get())
-    startFrequency = float(startF_var.get().split()[0])
-    stopFrequency = float(stopF_var.get().split()[0])
+    startFrequency = on_select_start(startF_dropdown)
+    stopFrequency = on_select_stop(stopF_dropdown)
+    # stopFrequency = float(stopF_var.get().split()[0])
     reference = float(resistance_var.get().split()[0])
     amplitude = float(amplitude_var.get().split()[0])
     measure_interval = float(measure_interval_entry.get())
 
     # Call the function to make the measurement
-    makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)
+    threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
 
     # Reset progress bar
     pb['value'] = 0
@@ -287,24 +323,36 @@ def stoop():
 
 # Steps entry
 tk.Label(root, text="Steps").grid(row=0, column=0)
-steps = tk.StringVar(value="151")  # Default value
+steps = tk.StringVar(value="5")  # Default value
 steps.trace_add("write", update_steps)  # Trace changes
 steps_entry = ttk.Entry(root, textvariable=steps)
 steps_entry.grid(row=1, column=0)
 
+# # Start Frequency entry
+# tk.Label(root, text="Start Frequency").grid(row=0, column=1)
+# startF_var = tk.StringVar() # holds a string data where we can set text value and can retrieve it 
+# startF_dropdown = ttk.Combobox(root, textvariable=startF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1 kHz", "10 kHz", "100 kHz", "1 MHz", "10 MHz", "15 MHz"])
+# startF_dropdown.grid(row=1, column=1)
+# startF_dropdown.current(2) # default selection
+
 # Start Frequency entry
 tk.Label(root, text="Start Frequency").grid(row=0, column=1)
-startF_var = tk.StringVar()
-startF_dropdown = ttk.Combobox(root, textvariable=startF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1000 Hz", "10000 Hz", "100000 Hz", "1 MHz", "10 MHz", "15 MHz"])
+startF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
+startF_dropdown.bind("<<ComboboxSelected>>", on_select_start)
 startF_dropdown.grid(row=1, column=1)
-startF_dropdown.current(1) # default selection
 
-# Stop Frequency entry dropdown
+# Stop Frequency entry
 tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
-stopF_var = tk.StringVar()
-stopF_dropdown = ttk.Combobox(root, textvariable=stopF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1000 Hz", "10000 Hz", "100000 Hz", "1 MHz", "10 MHz", "15 MHz"])
+stopF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
+stopF_dropdown.bind("<<ComboboxSelected>>", on_select_stop)
 stopF_dropdown.grid(row=1, column=2)
-stopF_dropdown.current(1) # default selection
+
+# # Stop Frequency entry dropdown
+# tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
+# stopF_var = tk.StringVar()
+# stopF_dropdown = ttk.Combobox(root, textvariable=stopF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1 kHz", "10 kHz", "100 kHz", "1 MHz", "10 MHz", "15 MHz"])
+# stopF_dropdown.grid(row=1, column=2)
+# stopF_dropdown.current(6) # default selection
 
 
 # Amplitude dropdown
