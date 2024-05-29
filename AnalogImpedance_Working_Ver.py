@@ -92,10 +92,12 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
     dwf.FDwfAnalogImpedanceReset(hdwf)
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
     dwf.FDwfAnalogImpedanceReferenceSet(hdwf, c_double(reference)) # reference resistor value in Ohms
-    dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(startFrequency)) # frequency in Hertz
+    dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(start_numeric_value)) # frequency in Hertz
     dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(voltage)) # 1V amplitude = 2V peak2peak signal
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(1)) # start
     time.sleep(2)
+
+    print("Start freq: ", start_numeric_value)
 
     rgHz = [0.0]*steps
     rgRs = [0.0]*steps
@@ -108,7 +110,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
     rgIc = [0.0]*steps # imag current
 
     for i in range(steps):
-        hz = stopFrequency * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stopFrequency/startFrequency)) # exponential frequency steps
+        hz = stop_numeric_value * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop_numeric_value/start_numeric_value)) # exponential frequency steps
         print("Step: "+str(i)+" "+str(hz)+"Hz")
         rgHz[i] = hz
         dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
@@ -214,52 +216,22 @@ frequency_dict = {
 
 def on_select_start(event):
     global startFrequency
+    global start_numeric_value
     startFrequency = startF_dropdown.get()
-    numeric_value = frequency_dict[startFrequency]
-    print(f"Selected: {startFrequency}, Numeric Value: {numeric_value}")
+    start_numeric_value = frequency_dict[startFrequency]
+    print(f"Selected: {startFrequency}, Numeric Value: {start_numeric_value}")
 
-    return int(startFrequency)
+    return start_numeric_value
 
 # Function to handle selection for stop frequency
 def on_select_stop(event):
     global stopFrequency
+    global stop_numeric_value
     stopFrequency = stopF_dropdown.get()
-    numeric_value = frequency_dict[stopFrequency]
-    print(f"Selected: {stopFrequency}, Numeric Value: {numeric_value}")
+    stop_numeric_value = frequency_dict[stopFrequency]
+    print(f"Selected: {stopFrequency}, Numeric Value: {stop_numeric_value}")
 
-    return int(stopFrequency)
-
-#    # Function to update start frequency
-# def update_start_frequency(*args):
-#     global startFrequency 
-#     startFrequency = startF_var.get()
-#     startFrequency_values = {
-#         "1 Hz" : 1,
-#         "10 Hz" : 10,
-#         "100 Hz" : 100,
-#         "1 kHz" : 1000,
-#         "10 kHz" : 10000,
-#         "100 kHz" : 100000,
-#         "1 MHz" : 1000000,
-#         "10 MHz" : 10000000,
-#         "15 MHz" : 15000000
-#     }   
-
-#    # Function to update stop frequency
-# def update_stop_frequency(*args):
-#     global stopFrequency 
-#     stopFrequency = stopF_var.get()
-#     stopFrequency_values = {
-#         "1 Hz" : 1,
-#         "10 Hz" : 10,
-#         "100 Hz" : 100,
-#         "1 kHz" : 1000,
-#         "10 kHz" : 10000,
-#         "100 kHz" : 100000,
-#         "1 MHz" : 1000000,
-#         "10 MHz" : 10000000,
-#         "15 MHz" : 15000000
-#     }     
+    return stop_numeric_value
 
 # Function to update amplitude
 def update_amplitude(*args):
@@ -291,17 +263,14 @@ def update_resistance(*args):
     }
     reference = resistance_values.get(resistance_var.get(), 1e3)
 
-# # Global variables to store selected frequencies
-# startFrequency = None
-# stopFrequency = None
 
 # Function to start the measurement
 def measure():
     global startFrequency, stopFrequency
     # Update global variables with the selected values
     steps = int(steps_entry.get())
-    startFrequency = on_select_start(startF_dropdown)
-    stopFrequency = on_select_stop(stopF_dropdown)
+    startFrequency = on_select_start(startFrequency)
+    stopFrequency = on_select_stop(stopFrequency)
     # stopFrequency = float(stopF_var.get().split()[0])
     reference = float(resistance_var.get().split()[0])
     amplitude = float(amplitude_var.get().split()[0])
@@ -328,13 +297,6 @@ steps.trace_add("write", update_steps)  # Trace changes
 steps_entry = ttk.Entry(root, textvariable=steps)
 steps_entry.grid(row=1, column=0)
 
-# # Start Frequency entry
-# tk.Label(root, text="Start Frequency").grid(row=0, column=1)
-# startF_var = tk.StringVar() # holds a string data where we can set text value and can retrieve it 
-# startF_dropdown = ttk.Combobox(root, textvariable=startF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1 kHz", "10 kHz", "100 kHz", "1 MHz", "10 MHz", "15 MHz"])
-# startF_dropdown.grid(row=1, column=1)
-# startF_dropdown.current(2) # default selection
-
 # Start Frequency entry
 tk.Label(root, text="Start Frequency").grid(row=0, column=1)
 startF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
@@ -346,14 +308,6 @@ tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
 stopF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
 stopF_dropdown.bind("<<ComboboxSelected>>", on_select_stop)
 stopF_dropdown.grid(row=1, column=2)
-
-# # Stop Frequency entry dropdown
-# tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
-# stopF_var = tk.StringVar()
-# stopF_dropdown = ttk.Combobox(root, textvariable=stopF_var, values = ["1 Hz", "10 Hz", "100 Hz", "1 kHz", "10 kHz", "100 kHz", "1 MHz", "10 MHz", "15 MHz"])
-# stopF_dropdown.grid(row=1, column=2)
-# stopF_dropdown.current(6) # default selection
-
 
 # Amplitude dropdown
 tk.Label(root, text="Amplitude").grid(row=2, column=0)
