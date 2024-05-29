@@ -46,7 +46,7 @@ root.title("Measurement Settings")
 root.geometry("630x400")
         
 #How the impedance Anaylyzer actully works and makes Measurments
-def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, makeMeasureTime):
+def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime):
     #Capture Current Date
     current_date = datetime.now()
     nowY = current_date.year
@@ -92,7 +92,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, voltage, ma
     dwf.FDwfAnalogImpedanceModeSet(hdwf, c_int(8)) # 0 = W1-C1-DUT-C2-R-GND, 1 = W1-C1-R-C2-DUT-GND, 8 = AD IA adapter
     dwf.FDwfAnalogImpedanceReferenceSet(hdwf, c_double(reference)) # reference resistor value in Ohms
     dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(start_numeric_value)) # frequency in Hertz
-    dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(voltage)) # 1V amplitude = 2V peak2peak signal
+    dwf.FDwfAnalogImpedanceAmplitudeSet(hdwf, c_double(amplitude)) # 1V amplitude = 2V peak2peak signal
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(1)) # start
     time.sleep(2)
 
@@ -215,6 +215,7 @@ frequency_dict = {
 
 startFrequency = None
 stopFrequency = None 
+amplitude = None
 
 def on_select_start(event):
     global startFrequency
@@ -235,11 +236,8 @@ def on_select_stop(event):
 
     return stop_numeric_value
 
-# Function to update amplitude
-def update_amplitude(*args):
-    global amplitude 
-    amplitude = amplitude_var.get()
-    amplitude_values = {
+# Dictionary for amplitude values
+amplitude_dict = {
         "2 V" : 2,
         "1 V" : 1,
         "500 mV" : 0.5,
@@ -250,30 +248,48 @@ def update_amplitude(*args):
         "10 mV" : 0.01,
         "5 mV" : 0.005,
         "0 V" : 0
-    }
+}
 
-# Function to update reference resistance
-def update_resistance(*args):
+# Function to handle selection for amplitude
+def on_select_amp(event):
+    global amplitude
+    global amplitude_numeric_value
+    amplitude = amplitude_dropdown.get()
+    amplitude_numeric_value = amplitude_dict[amplitude]
+    print(f"Selected: {amplitude}, Numeric Value: {amplitude_numeric_value}")
+
+    return amplitude_numeric_value
+
+# Dictionary for resistance values
+reference_dict = {
+    "1 MΩ" : 1000000,
+    "100 kΩ" : 100000,
+    "10 kΩ" : 10000,
+    "1 kΩ" : 1000,
+    "100 Ω" : 100,
+    "10 Ω" : 10
+}
+
+# Function to handle selection for resistance
+def on_select_res(event):
     global reference
-    resistance_values = {
-        "1 MΩ": 1e6,
-        "100 kΩ": 1e5,
-        "10 kΩ": 1e4,
-        "1 kΩ": 1e3,
-        "100 Ω": 100,
-        "10 Ω": 10
-    }
-    reference = resistance_values.get(resistance_var.get(), 1e3)
+    global reference_numeric_value
+    reference = resistance_dropdown.get()
+    reference_numeric_value = reference_dict[reference]
+    print(f"Selected: {reference}, Numeric Value: {reference_numeric_value}")
+
+    return reference_numeric_value
+
 
 # Function to start the measurement
 def measure():
-    global startFrequency, stopFrequency
+    global startFrequency, stopFrequency, amplitude, reference
     # Update global variables with the selected values
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
     stopFrequency = on_select_stop(stopFrequency)
-    reference = float(resistance_var.get().split()[0])
-    amplitude = float(amplitude_var.get().split()[0])
+    reference = on_select_res(reference)
+    amplitude = on_select_amp(amplitude)
     measure_interval = float(measure_interval_entry.get())
 
     # Call the function to make the measurement
@@ -311,19 +327,18 @@ stopF_dropdown.bind("<<ComboboxSelected>>", on_select_stop)
 stopF_dropdown.grid(row=1, column=2)
 stopF_dropdown.current(list(frequency_dict.keys()).index("1 MHz"))  # Set default value to 1 MHz
 
-# Amplitude dropdown
+# Amplitude entry
 tk.Label(root, text="Amplitude").grid(row=2, column=0)
-amplitude_var = tk.StringVar()
-amplitude_dropdown = ttk.Combobox(root, textvariable=amplitude_var, values=["2 V", "1 V", "500 mV", "200 mV", "100 mV", "50 mV", "20 mV", "10 mV", "5 mV", "0 V"])
+amplitude_dropdown = ttk.Combobox(root, values=list(amplitude_dict.keys()))
+amplitude_dropdown.bind("<<ComboboxSelected>>", on_select_amp)
 amplitude_dropdown.grid(row=3, column=0)
-amplitude_dropdown.current(1)  # Default selection
+amplitude_dropdown.current(list(amplitude_dict.keys()).index("1 V"))  # Set default value to 1 MHz
 
 # Reference resistance dropdown
 tk.Label(root, text="Reference resistance").grid(row=2, column=1)
-resistance_var = tk.StringVar()
-resistance_dropdown = ttk.Combobox(root, textvariable=resistance_var, values=["1 MΩ", "100 kΩ", "10 kΩ", "1 kΩ", "100 Ω", "10 Ω"])
+resistance_dropdown = ttk.Combobox(root, values=list(reference_dict.keys()))
+resistance_dropdown.bind("<<ComboboxSelected>>", on_select_res)
 resistance_dropdown.grid(row=3, column=1)
-resistance_dropdown.current(3)  # Default selection
 
 # Measurement interval entry
 tk.Label(root, text="Measure once every _ hours").grid(row=2, column=2)
