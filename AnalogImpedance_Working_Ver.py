@@ -25,6 +25,7 @@ from tkinter import ttk
 import os
 import csv 
 import threading
+from tkinter import messagebox
 
 # creation of directory
 output_dir = "Impedance_Data_Collection"
@@ -201,11 +202,12 @@ def update_steps(*args):
         # Convert the entry to an integer
         steps_int = int(steps.get())
         if steps_int < 0:
-            raise ValueError("Steps cannot be negative.")
-        print("Updated Steps to:", steps_int)
+            # raise ValueError("Steps cannot be negative.")
+            messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
+            print("Updated Steps to:", steps_int)
 
     except ValueError as e:
-        print("Invalid input for steps. Please enter an integer")
+        print("Invalid input for steps. Please enter a positive integer")
 
 # Dictionary for frequency values
 frequency_dict = {
@@ -303,9 +305,9 @@ def measure():
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
 
-    # Reset progress bar
-    pb['value'] = 0
-    value_label['text'] = updateProgressLabel()
+    # # Reset progress bar
+    # pb['value'] = 0
+    # value_label['text'] = updateProgressLabel()
 
 # Function to handle Start and Stop
 def staart():
@@ -355,34 +357,34 @@ measure_interval_entry = ttk.Entry(root)
 measure_interval_entry.grid(row=3, column=2)
 measure_interval_entry.insert(0, "4")  # Default value
 
-# progress bar text
-def updateProgressLabel():
-    return f"Current Progress: {pb['value']}%"
+# # progress bar text
+# def updateProgressLabel():
+#     print ("Steps x/151")
 
-def progress():
-    if pb['value'] < 100:
-        pb['value'] += 20
-        value_label['text'] = updateProgressLabel()
-    # else:
-    #     # showinfo(message='The progress completed!')
+# def progress():
+#     if pb['value'] < 100:
+#         pb['value'] += 20
+#         value_label['text'] = updateProgressLabel()
+#     # else:
+#     #     # showinfo(message='The progress completed!')
 
-def stop():
-    pb.stop()
-    value_label['text'] = updateProgressLabel()
+# def stop():
+#     pb.stop()
+#     value_label['text'] = updateProgressLabel()
 
-# progressbar
-pb = ttk.Progressbar(
-    root,
-    orient='horizontal',
-    mode='determinate',
-    length=280
-)
-# place the progressbar
-pb.grid(column=0, row=5, columnspan=2, padx=10, pady=20)
+# # progressbar
+# pb = ttk.Progressbar(
+#     root,
+#     orient='horizontal',
+#     mode='determinate',
+#     length=280
+# )
+# # place the progressbar
+# pb.grid(column=0, row=5, columnspan=2, padx=10, pady=20)
 
-# label
-value_label = ttk.Label(root, text=updateProgressLabel())
-value_label.grid(column=0, row=7, columnspan=2)
+# # label
+# value_label = ttk.Label(root, text=updateProgressLabel)
+# value_label.grid(column=0, row=7, columnspan=2)
 
 # start button
 start_button = ttk.Button(
