@@ -17,6 +17,7 @@ import time
 import sys
 import numpy 
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 from datetime import datetime
 import tkinter as tk
@@ -24,13 +25,6 @@ from tkinter import ttk
 import os
 import csv 
 import threading
-
-
-# steps = 151
-# startFrequency = 1e2
-# stopFrequency = 1e6
-# reference = 1e3
-# makeMeasureTime = 6
 
 # creation of directory
 output_dir = "Impedance_Data_Collection"
@@ -40,7 +34,11 @@ if not os.path.exists(output_dir):
 
 # Create the main window
 root = tk.Tk()
+fig, ax = plt.subplots()
 root.title("Measurement Settings")
+
+# tkinter application
+frame = tk.Frame(root)
 
 # Set the window size
 root.geometry("630x400")
@@ -96,8 +94,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(1)) # start
     time.sleep(2)
 
-    print("Start freq: ", start_numeric_value)
-
     rgHz = [0.0]*steps
     rgRs = [0.0]*steps
     rgXs = [0.0]*steps
@@ -152,6 +148,22 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
         rgRc[i] = abs(realCurrent.value)
         rgIc[i] = abs(imagCurrent.value)
 
+        # graphs
+        canvas = FigureCanvasTkAgg(fig, master= frame)
+        canvas.get_tk_widget().pack()
+
+        frame.grid(column= 0, row= 6)
+
+        x = rgXs
+        y = rgRs
+        ax.plot()
+
+        # plt.plot(rgHz, rgRs, rgHz, rgXs)
+        # ax = plt.gca()
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+        # plt.show()
+
         now_time = now + '_at_' + current_time + '_data'
 
         data = pd.DataFrame({
@@ -180,11 +192,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     dwf.FDwfDeviceClose(hdwf)
 
     print(f"Data saved to {csv_filename}")
-
-    ax = plt.gca()
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    plt.show()
 
     
 #Extracts Steps value from GUI
@@ -216,6 +223,7 @@ frequency_dict = {
 startFrequency = None
 stopFrequency = None 
 amplitude = None
+reference = None
 
 def on_select_start(event):
     global startFrequency
@@ -339,6 +347,7 @@ tk.Label(root, text="Reference resistance").grid(row=2, column=1)
 resistance_dropdown = ttk.Combobox(root, values=list(reference_dict.keys()))
 resistance_dropdown.bind("<<ComboboxSelected>>", on_select_res)
 resistance_dropdown.grid(row=3, column=1)
+resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ")) # set default value to 1 kΩ
 
 # Measurement interval entry
 tk.Label(root, text="Measure once every _ hours").grid(row=2, column=2)
