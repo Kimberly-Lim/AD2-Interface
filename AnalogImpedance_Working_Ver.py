@@ -52,8 +52,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     nowD = current_date.day
     nowM = current_date.month
     now = str(nowM)+ '-' + str(nowD)+ '-' + str(nowY)
-    voltage = 1
-    makeMeasureTime = 6
 
     #Capture Current Time
     t = time.localtime()
@@ -138,7 +136,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIreal, byref(realCurrent))      
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIimag, byref(imagCurrent))                
         # add other measurements here (impedance, impedanceVReal impedanceVImag, impedancelreal, impedancelimag)
-        
 
         rgRs[i] = abs(resistance.value) # absolute value for logarithmic plot
         rgXs[i] = abs(reactance.value)
@@ -148,22 +145,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
         rgIv[i] = abs(imagVoltage.value)
         rgRc[i] = abs(realCurrent.value)
         rgIc[i] = abs(imagCurrent.value)
-
-        # graphs
-        canvas = FigureCanvasTkAgg(fig, master= frame)
-        canvas.get_tk_widget().pack()
-
-        frame.grid(column= 0, row= 6)
-
-        x = rgXs
-        y = rgRs
-        ax.plot()
-
-        # plt.plot(rgHz, rgRs, rgHz, rgXs)
-        # ax = plt.gca()
-        # ax.set_xscale('log')
-        # ax.set_yscale('log')
-        # plt.show()
 
         now_time = now + '_at_' + current_time + '_data'
 
@@ -193,8 +174,9 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     dwf.FDwfDeviceClose(hdwf)
 
     print(f"Data saved to {csv_filename}")
-
     
+# end of def makeMeasurement 
+
 #Extracts Steps value from GUI
 def update_steps(*args):
     global steps_int
@@ -290,7 +272,6 @@ def on_select_res(event):
 
     return reference_numeric_value
 
-
 # Function to start the measurement
 def measure():
     global startFrequency, stopFrequency, amplitude, reference
@@ -304,10 +285,6 @@ def measure():
 
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
-
-    # # Reset progress bar
-    # pb['value'] = 0
-    # value_label['text'] = updateProgressLabel()
 
 # Function to handle Start and Stop
 def staart():
@@ -356,35 +333,6 @@ tk.Label(root, text="Measure once every _ hours").grid(row=2, column=2)
 measure_interval_entry = ttk.Entry(root)
 measure_interval_entry.grid(row=3, column=2)
 measure_interval_entry.insert(0, "4")  # Default value
-
-# # progress bar text
-# def updateProgressLabel():
-#     print ("Steps x/151")
-
-# def progress():
-#     if pb['value'] < 100:
-#         pb['value'] += 20
-#         value_label['text'] = updateProgressLabel()
-#     # else:
-#     #     # showinfo(message='The progress completed!')
-
-# def stop():
-#     pb.stop()
-#     value_label['text'] = updateProgressLabel()
-
-# # progressbar
-# pb = ttk.Progressbar(
-#     root,
-#     orient='horizontal',
-#     mode='determinate',
-#     length=280
-# )
-# # place the progressbar
-# pb.grid(column=0, row=5, columnspan=2, padx=10, pady=20)
-
-# # label
-# value_label = ttk.Label(root, text=updateProgressLabel)
-# value_label.grid(column=0, row=7, columnspan=2)
 
 # start button
 start_button = ttk.Button(
