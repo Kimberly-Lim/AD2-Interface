@@ -15,7 +15,7 @@ from dwfconstants import *
 import math
 import time
 import sys
-import numpy 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
@@ -31,18 +31,6 @@ from tkinter import messagebox
 output_dir = "Impedance_Data_Collection"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-
-
-# Create the main window
-root = tk.Tk()
-fig, ax = plt.subplots()
-root.title("Measurement Settings")
-
-# tkinter application
-frame = tk.Frame(root)
-
-# Set the window size
-root.geometry("630x400")
         
 #How the impedance Anaylyzer actully works and makes Measurments
 def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime):
@@ -174,6 +162,25 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     dwf.FDwfDeviceClose(hdwf)
 
     print(f"Data saved to {csv_filename}")
+
+    # Function to create and display the new plot with logarithmic scales
+    def plot_log_scales(rgHz, rgRs, rgXs):
+        fig, ax = plt.subplots()
+        ax.plot(rgHz, rgRs, label='Resistance (Rs)')
+        ax.plot(rgHz, rgXs, label='Reactance (Xs)')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel('Frequency (Hz)')
+        ax.set_ylabel('Impedance (Ohms)')
+        ax.legend()
+        ax.set_title('Logarithmic Plot of Rs and Xs')
+
+        canvas = FigureCanvasTkAgg(fig, master=frame_graphs)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky='nsew')
+
+        # Call the function to plot the data
+        plot_log_scales(rgHz, rgRs, rgXs)
     
 # end of def makeMeasurement 
 
@@ -293,61 +300,158 @@ def staart():
 def stoop():
     print("Measurement stopped")
 
-# Steps entry
-tk.Label(root, text="Steps").grid(row=0, column=0)
-steps = tk.StringVar(value="151")  # Default value
-steps.trace_add("write", update_steps)  # Trace changes
-steps_entry = ttk.Entry(root, textvariable=steps)
-steps_entry.grid(row=1, column=0)
+# Create the main window
+root = tk.Tk()
+fig, ax = plt.subplots()
+root.title("Measurement Settings")
 
-# Start Frequency entry
-tk.Label(root, text="Start Frequency").grid(row=0, column=1)
-startF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
+# Make the main window's grid layout adjustable
+root.columnconfigure(0, weight=1)
+root.columnconfigure(1, weight=1)
+root.columnconfigure(2, weight=1)
+root.rowconfigure(0, weight=1)
+root.rowconfigure(1, weight=1)
+root.rowconfigure(2, weight=2)
+root.rowconfigure(3, weight=2)
+
+# Create a frame for the settings
+frame_settings = tk.Frame(root)
+frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
+
+# Configure grid layout for frame_settings
+frame_settings.columnconfigure(0, weight=1)
+frame_settings.columnconfigure(1, weight=1)
+frame_settings.columnconfigure(2, weight=1)
+frame_settings.rowconfigure(0, weight=1)
+frame_settings.rowconfigure(1, weight=1)
+frame_settings.rowconfigure(2, weight=1)
+
+# Create a frame for the graphs
+frame_graphs = tk.Frame(root)
+frame_graphs.grid(row=2, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
+
+# Make the frame expand with the window
+frame_graphs.columnconfigure(0, weight=1)
+frame_graphs.columnconfigure(1, weight=1)
+frame_graphs.columnconfigure(2, weight=1)
+frame_graphs.rowconfigure(0, weight=1)
+frame_graphs.rowconfigure(1, weight=1)
+
+# Generate some sample data for the graphs
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+y3 = np.tan(x)
+
+# Create the first graph
+fig1, ax1 = plt.subplots(figsize=(2,1))
+ax1.set_title('Nyquist')
+ax1.legend()
+canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+canvas1.draw()
+canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+
+# Create the second graph
+fig1, ax1 = plt.subplots(figsize=(2,1))
+ax1.set_title('Impedance')
+ax1.legend()
+canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+canvas2.draw()
+canvas2.get_tk_widget().grid(row=0, column=1, rowspan=2, padx=5, pady=5, sticky='nsew')
+
+# Create the third graph
+fig1, ax1 = plt.subplots(figsize=(2,1))
+# ax1.plot(x, y1, label='Nyquist Plot')
+ax1.set_title('Phase Angle')
+ax1.legend()
+canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+canvas3.draw()
+canvas3.get_tk_widget().grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
+
+# Set the window size
+root.geometry("1200x800")
+
+# Make the main window's grid layout adjustable
+root.columnconfigure(0, weight=1)
+root.columnconfigure(1, weight=1)
+root.columnconfigure(2, weight=1)
+root.rowconfigure(0, weight=1)
+root.rowconfigure(1, weight=1)
+root.rowconfigure(2, weight=2)
+root.rowconfigure(3, weight=2)
+
+# Create a frame for the settings
+frame_settings = tk.Frame(root)
+frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
+
+# Configure grid layout for frame_settings
+frame_settings.columnconfigure(0, weight=1)
+frame_settings.columnconfigure(1, weight=1)
+frame_settings.columnconfigure(2, weight=1)
+frame_settings.rowconfigure(0, weight=1)
+frame_settings.rowconfigure(1, weight=1)
+frame_settings.rowconfigure(2, weight=1)
+
+# Add settings widgets to frame_settings
+steps_label = tk.Label(frame_settings, text="Steps:")
+steps_label.grid(row=0, column=0, padx=0, pady=0, sticky='NW')
+steps_entry = tk.Entry(frame_settings)
+steps_entry.insert(0, "151")  # Set default value to 151
+steps_entry.grid(row=1, column=0, padx=0, pady=0, sticky='NW')
+
+# Add Start Frequency entry to frame_settings
+startF_label = tk.Label(frame_settings, text="Start Frequency")
+startF_label.grid(row=0, column=1, padx=5, pady=5, sticky='NW')
+startF_dropdown = ttk.Combobox(frame_settings, values=list(frequency_dict.keys()))
 startF_dropdown.bind("<<ComboboxSelected>>", on_select_start)
-startF_dropdown.grid(row=1, column=1)
-startF_dropdown.current(list(frequency_dict.keys()).index("100 Hz"))  # Set default value to 1 kHz
+startF_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky='NW')
+startF_dropdown.current(list(frequency_dict.keys()).index("100 Hz"))  # Set default value to 100 Hz
 
-# Stop Frequency entry
-tk.Label(root, text="Stop Frequency").grid(row=0, column=2)
-stopF_dropdown = ttk.Combobox(root, values=list(frequency_dict.keys()))
-stopF_dropdown.bind("<<ComboboxSelected>>", on_select_stop)
-stopF_dropdown.grid(row=1, column=2)
-stopF_dropdown.current(list(frequency_dict.keys()).index("1 MHz"))  # Set default value to 1 MHz
+# Add Stop Frequency entry to frame_settings
+stopF_label = tk.Label(frame_settings, text="Stop Frequency")
+stopF_label.grid(row=0, column=2, padx=5, pady=5, sticky='NW')
+stopF_dropdown = ttk.Combobox(frame_settings, values=list(frequency_dict.keys()))
+stopF_dropdown.bind("<<ComboboxSelected>>", on_select_start)
+stopF_dropdown.grid(row=1, column=2, padx=5, pady=5, sticky='NW')
+stopF_dropdown.current(list(frequency_dict.keys()).index("1 MHz"))  # Set default value to 100 Hz
 
-# Amplitude entry
-tk.Label(root, text="Amplitude").grid(row=2, column=0)
-amplitude_dropdown = ttk.Combobox(root, values=list(amplitude_dict.keys()))
+# Add amplitude entry to frame_settings
+amplitude_label = tk.Label(frame_settings, text="Amplitude")
+amplitude_label.grid(row=2, column=0, padx=5, pady=5, sticky='NW')
+amplitude_dropdown = ttk.Combobox(frame_settings, values=list(amplitude_dict.keys()))
 amplitude_dropdown.bind("<<ComboboxSelected>>", on_select_amp)
-amplitude_dropdown.grid(row=3, column=0)
-amplitude_dropdown.current(list(amplitude_dict.keys()).index("1 V"))  # Set default value to 1 MHz
+amplitude_dropdown.grid(row=3, column=0, padx=5, pady=5, sticky='NW')
+amplitude_dropdown.current(list(amplitude_dict.keys()).index("1 V"))  # Set default value to 100 Hz
 
-# Reference resistance dropdown
-tk.Label(root, text="Reference resistance").grid(row=2, column=1)
-resistance_dropdown = ttk.Combobox(root, values=list(reference_dict.keys()))
+# Add reference resistance entry to frame_settings
+resistance_label = tk.Label(frame_settings, text="Reference Resistance")
+resistance_label.grid(row=2, column=1, padx=5, pady=5, sticky='NW')
+resistance_dropdown = ttk.Combobox(frame_settings, values=list(reference_dict.keys()))
 resistance_dropdown.bind("<<ComboboxSelected>>", on_select_res)
-resistance_dropdown.grid(row=3, column=1)
-resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ")) # set default value to 1 kΩ
+resistance_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='NW')
+resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set default value to 100 Hz
 
-# Measurement interval entry
-tk.Label(root, text="Measure once every _ hours").grid(row=2, column=2)
-measure_interval_entry = ttk.Entry(root)
-measure_interval_entry.grid(row=3, column=2)
+# Add Measurement Interval entry to frame_settings
+measure_interval_label = tk.Label(frame_settings, text="Measure once every _ hours")
+measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
+measure_interval_entry = ttk.Entry(frame_settings)
+measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry.insert(0, "4")  # Default value
 
 # start button
 start_button = ttk.Button(
-    root,
-    text='Start',
+    frame_settings,
+    text='Start Steps',
     command=measure
 )
-start_button.grid(column=0, row=6, padx=10, pady=10, sticky=tk.E)
+start_button.grid(column=0, row=6, padx=10, pady=10, sticky='NW')
 
 stop_button = ttk.Button(
-    root,
+    frame_settings,
     text='Stop',
     command=stoop
 )
-stop_button.grid(column=1, row=6, padx=10, pady=10, sticky=tk.W)
+stop_button.grid(column=1, row=6, padx=10, pady=10, sticky='NW')
 
 # Run the application
 root.mainloop()
