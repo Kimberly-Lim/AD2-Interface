@@ -1,6 +1,3 @@
-
-
-
 """
    DWF Python Example
    Author:  Digilent, Inc.
@@ -17,7 +14,7 @@ import time
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import pandas as pd
 from datetime import datetime
 import tkinter as tk
@@ -31,6 +28,8 @@ from tkinter import messagebox
 output_dir = "Impedance_Data_Collection"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
+
+measurements_running = False
         
 #How the impedance Anaylyzer actully works and makes Measurments
 def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime):
@@ -94,6 +93,21 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
     for i in range(steps):
         hz = stop_numeric_value * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop_numeric_value/start_numeric_value)) # exponential frequency steps
         print("Step: "+str(i)+" "+str(hz)+"Hz")
+
+        # Add a label to display the step count
+        log_label = tk.Label(frame_settings, text="Step Count: " + str(i + 1))
+        log_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
+
+        # Update the step count label on the GUI thread
+        total_steps = int(steps_entry.get())
+
+        # Function to update step count
+        # def update_step_count(current_step, total_steps, hz):
+        #     log_label.config(text=f"Step Count: {current_step}/{total_steps - 1}")
+        #     root.update_idletasks()
+
+        # root.after(0, update_step_count, i, total_steps , hz)
+
         rgHz[i] = hz
         dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
         # if settle time is required for the DUT, wait and restart the acquisition
@@ -163,24 +177,58 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
 
     print(f"Data saved to {csv_filename}")
 
-    # Function to create and display the new plot with logarithmic scales
-    def plot_log_scales(rgHz, rgRs, rgXs):
-        fig, ax = plt.subplots()
-        ax.plot(rgHz, rgRs, label='Resistance (Rs)')
-        ax.plot(rgHz, rgXs, label='Reactance (Xs)')
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-        ax.set_xlabel('Frequency (Hz)')
-        ax.set_ylabel('Impedance (Ohms)')
-        ax.legend()
-        ax.set_title('Logarithmic Plot of Rs and Xs')
+    # Create the first graph
+    fig1, ax1 = plt.subplots(figsize=(2,1))
+    ax1.plot(rgXs, rgRs)
+    fig1.suptitle('Nyquist', fontsize= 8)
+    fig1.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax1.patch.set_alpha(0.0)   # Make the axes background transparent
+    plt.xscale("log")
+    plt.yscale("log")
+    canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    plt.xticks(fontsize=2)
+    plt.yticks(fontsize=2)
+    plt.xlabel("Reactance", fontsize = 5)
+    plt.ylabel("Resistance", fontsize = 5)
+    canvas1.draw()
+    canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
-        canvas = FigureCanvasTkAgg(fig, master=frame_graphs)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky='nsew')
+    # tool bar functionality for first graph
+    toolbar_frame1 = tk.Frame(frame_graphs)
+    toolbar_frame1.grid(row=1, column=0, padx=2, pady=2, sticky='ew')
+    toolbar1 = NavigationToolbar2Tk(canvas1, toolbar_frame1)
 
-        # Call the function to plot the data
-        plot_log_scales(rgHz, rgRs, rgXs)
+    # Create the second graph
+    fig1, ax2 = plt.subplots(figsize=(2,1))
+    # ax2.set_title('Impedance')
+    fig1.suptitle('Impedance', fontsize = 8)
+    # ax1.legend()
+    ax2.plot(rgHz, rgZ)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xticks(fontsize=2)
+    plt.yticks(fontsize=2)
+    plt.xlabel("Frequency", fontsize = 5)
+    plt.ylabel("Impedance", fontsize = 5)
+    canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    canvas2.draw()
+    canvas2.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
+
+    # Create the third graph
+    fig1, ax3 = plt.subplots(figsize=(2,1))
+    # ax3.set_title('Phase Angle')
+    fig1.suptitle('Phase Angle', fontsize=8)
+    # ax3.legend()
+    ax3.plot(rgHz, rgPhase)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xticks(fontsize=2)
+    plt.yticks(fontsize=2)
+    plt.xlabel("Frequency", fontsize = 5)
+    plt.ylabel("Phase Angle", fontsize = 5)
+    canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    canvas3.draw()
+    canvas3.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
     
 # end of def makeMeasurement 
 
@@ -281,6 +329,8 @@ def on_select_res(event):
 
 # Function to start the measurement
 def measure():
+    if not measurements_running:
+        return
     global startFrequency, stopFrequency, amplitude, reference
     # Update global variables with the selected values
     steps = int(steps_entry.get())
@@ -290,15 +340,12 @@ def measure():
     amplitude = on_select_amp(amplitude)
     measure_interval = float(measure_interval_entry.get())
 
+    if measurements_running:
+        interval = int(measure_interval_entry.get()) * 60
+        root.after(interval, measure)
+
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
-
-# Function to handle Start and Stop
-def staart():
-    print("Measurement started")
-
-def stoop():
-    print("Measurement stopped")
 
 # Create the main window
 root = tk.Tk()
@@ -337,39 +384,8 @@ frame_graphs.columnconfigure(2, weight=1)
 frame_graphs.rowconfigure(0, weight=1)
 frame_graphs.rowconfigure(1, weight=1)
 
-# Generate some sample data for the graphs
-x = np.linspace(0, 10, 100)
-y1 = np.sin(x)
-y2 = np.cos(x)
-y3 = np.tan(x)
-
-# Create the first graph
-fig1, ax1 = plt.subplots(figsize=(2,1))
-ax1.set_title('Nyquist')
-ax1.legend()
-canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-canvas1.draw()
-canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-
-# Create the second graph
-fig1, ax1 = plt.subplots(figsize=(2,1))
-ax1.set_title('Impedance')
-ax1.legend()
-canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-canvas2.draw()
-canvas2.get_tk_widget().grid(row=0, column=1, rowspan=2, padx=5, pady=5, sticky='nsew')
-
-# Create the third graph
-fig1, ax1 = plt.subplots(figsize=(2,1))
-# ax1.plot(x, y1, label='Nyquist Plot')
-ax1.set_title('Phase Angle')
-ax1.legend()
-canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-canvas3.draw()
-canvas3.get_tk_widget().grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
-
 # Set the window size
-root.geometry("1200x800")
+root.geometry("1200x600")
 
 # Make the main window's grid layout adjustable
 root.columnconfigure(0, weight=1)
@@ -432,24 +448,51 @@ resistance_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='NW')
 resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set default value to 100 Hz
 
 # Add Measurement Interval entry to frame_settings
-measure_interval_label = tk.Label(frame_settings, text="Measure once every _ hours")
+measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every  ")
 measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry = ttk.Entry(frame_settings)
 measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
-measure_interval_entry.insert(0, "4")  # Default value
+measure_interval_entry.insert(0, "1")  # Default value
+
+measure_interval_entry_time_length = ttk.Combobox(frame_settings, textvariable='interval')
+measure_interval_entry_time_length.grid(row=4, column=2, padx=5, pady=5, sticky='NW')
+measure_interval_entry_time_length['values'] = ('minute', 'hour')
+measure_interval_entry_time_length.current(0)
+
+# Add a Text widget to display log messages
+# log_text = tk.Text(frame_graphs, wrap='word', height=10)
+# log_text.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')
+
+# Add a label to display the step count
+# log_label = tk.Label(frame_settings, text="Step: 0")
+# log_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
+
+# # Add step count label
+# step_count_label = tk.Label(frame_settings, text="Step Count: 0/0")
+# step_count_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
+
+# starts measurement process
+def start_measurements():
+    global measurements_running 
+    measurements_running = True
+    measure()
+
+def stop_measurements():
+    global measurements_running
+    measurements_running = False
 
 # start button
 start_button = ttk.Button(
     frame_settings,
-    text='Start Steps',
-    command=measure
+    text='Start Measurement',
+    command=start_measurements
 )
 start_button.grid(column=0, row=6, padx=10, pady=10, sticky='NW')
 
 stop_button = ttk.Button(
     frame_settings,
     text='Stop',
-    command=stoop
+    command=stop_measurements
 )
 stop_button.grid(column=1, row=6, padx=10, pady=10, sticky='NW')
 
