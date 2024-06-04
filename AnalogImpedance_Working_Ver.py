@@ -96,7 +96,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
 
         # Add a label to display the step count
         log_label = tk.Label(frame_settings, text="Step Count: " + str(i + 1))
-        log_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
+        log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
 
         # Update the step count label on the GUI thread
         total_steps = int(steps_entry.get())
@@ -177,58 +177,65 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
 
     print(f"Data saved to {csv_filename}")
 
-    # Create the first graph
+    # Create the nyquist graph
     fig1, ax1 = plt.subplots(figsize=(2,1))
-    ax1.plot(rgXs, rgRs)
+    # fig1 = plt.figure(linewidth=10, edgecolor='black')
+    ax1.plot(rgRs, rgXs, linewidth='1')
     fig1.suptitle('Nyquist', fontsize= 8)
     fig1.patch.set_alpha(0.0)  # Make the figure background transparent
     ax1.patch.set_alpha(0.0)   # Make the axes background transparent
-    plt.xscale("log")
-    plt.yscale("log")
     canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-    plt.xticks(fontsize=2)
-    plt.yticks(fontsize=2)
-    plt.xlabel("Reactance", fontsize = 5)
-    plt.ylabel("Resistance", fontsize = 5)
+    plt.xticks(fontsize=5)
+    plt.yticks(fontsize=3)
+    plt.xlabel("Resistance (Ohms)", fontsize = 5)
+    plt.ylabel("-Reactance (Ohms)", fontsize = 5)
     canvas1.draw()
-    canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+    canvas1.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
 
-    # tool bar functionality for first graph
-    toolbar_frame1 = tk.Frame(frame_graphs)
-    toolbar_frame1.grid(row=1, column=0, padx=2, pady=2, sticky='ew')
+    # tool bar functionality for Nyquist graph
+    toolbar_frame1 = tk.Frame(frame_settings)
+    toolbar_frame1.grid(row=5, column=2, padx=1, pady=1, sticky='w')
     toolbar1 = NavigationToolbar2Tk(canvas1, toolbar_frame1)
 
-    # Create the second graph
+    # Create the impedance graph
     fig1, ax2 = plt.subplots(figsize=(2,1))
     # ax2.set_title('Impedance')
     fig1.suptitle('Impedance', fontsize = 8)
     # ax1.legend()
-    ax2.plot(rgHz, rgZ)
+    ax2.plot(rgHz, rgZ, linewidth='1')
     plt.xscale("log")
-    plt.yscale("log")
-    plt.xticks(fontsize=2)
-    plt.yticks(fontsize=2)
-    plt.xlabel("Frequency", fontsize = 5)
-    plt.ylabel("Impedance", fontsize = 5)
+    plt.xticks(fontsize=5)
+    plt.yticks(fontsize=5)
+    plt.xlabel("Frequency (Hz)", fontsize = 5)
+    plt.ylabel("Magnitude(Ohms)", fontsize = 5)
     canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
     canvas2.draw()
-    canvas2.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
+    canvas2.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
-    # Create the third graph
+    # # tool bar functionality for impedance graph
+    toolbar_frame2 = tk.Frame(frame_settings)
+    toolbar_frame2.grid(row=7, column=0, padx=1, pady=1, sticky='e')
+    toolbar2 = NavigationToolbar2Tk(canvas2, toolbar_frame1)
+
+    # Create the phase angle graph
     fig1, ax3 = plt.subplots(figsize=(2,1))
     # ax3.set_title('Phase Angle')
     fig1.suptitle('Phase Angle', fontsize=8)
     # ax3.legend()
-    ax3.plot(rgHz, rgPhase)
+    ax3.plot(rgHz, rgPhase, linewidth='1')
     plt.xscale("log")
-    plt.yscale("log")
-    plt.xticks(fontsize=2)
-    plt.yticks(fontsize=2)
-    plt.xlabel("Frequency", fontsize = 5)
-    plt.ylabel("Phase Angle", fontsize = 5)
+    plt.xticks(fontsize=5)
+    plt.yticks(fontsize=5)
+    plt.xlabel("Frequency (Hz)", fontsize = 5)
+    plt.ylabel("Phase (degrees)", fontsize = 5)
     canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
     canvas3.draw()
     canvas3.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
+
+    # tool bar functionality for phase angle graph
+    toolbar_frame3 = tk.Frame(frame_settings)
+    toolbar_frame3.grid(row=7, column=1, padx=1, pady=1, sticky='e')
+    toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame1)
     
 # end of def makeMeasurement 
 
@@ -340,9 +347,9 @@ def measure():
     amplitude = on_select_amp(amplitude)
     measure_interval = float(measure_interval_entry.get())
 
-    if measurements_running:
-        interval = int(measure_interval_entry.get()) * 60
-        root.after(interval, measure)
+    # if measurements_running:
+    #     interval = int(measure_interval_entry.get()) * 60
+    #     root.after(interval, measure)
 
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
@@ -487,14 +494,14 @@ start_button = ttk.Button(
     text='Start Measurement',
     command=start_measurements
 )
-start_button.grid(column=0, row=6, padx=10, pady=10, sticky='NW')
+start_button.grid(column=0, row=4, padx=10, pady=10, sticky='NW')
 
 stop_button = ttk.Button(
     frame_settings,
     text='Stop',
     command=stop_measurements
 )
-stop_button.grid(column=1, row=6, padx=10, pady=10, sticky='NW')
+stop_button.grid(column=1, row=4, padx=10, pady=10, sticky='NW')
 
 # Run the application
 root.mainloop()
