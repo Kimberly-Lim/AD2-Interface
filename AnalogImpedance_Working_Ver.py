@@ -93,21 +93,17 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
 
     for i in range(steps):
         hz = stop_numeric_value * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop_numeric_value/start_numeric_value)) # exponential frequency steps
-        print("Step: "+str(i)+" "+str(hz)+"Hz")
-
-        # Add a label to display the step count
-        log_label = tk.Label(frame_settings, text="Step Count: " + str(i + 1))
+        # log_label =tk.Label(frame_settings, text=f"Step: {i + 1} Frequency: {hz:.2f} Hz")
+        log_label =tk.Label(frame_settings, text=f"Step Count Progress: {i + 1}")
         log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
+        root.update()
+
+        # # Add a label to display the step count
+        # log_label = tk.Label(frame_settings, text="Step Count: " + str(i + 1))
+        # log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
 
         # Update the step count label on the GUI thread
         total_steps = int(steps_entry.get())
-
-        # Function to update step count
-        # def update_step_count(current_step, total_steps, hz):
-        #     log_label.config(text=f"Step Count: {current_step}/{total_steps - 1}")
-        #     root.update_idletasks()
-
-        # root.after(0, update_step_count, i, total_steps , hz)
 
         rgHz[i] = hz
         dwf.FDwfAnalogImpedanceFrequencySet(hdwf, c_double(hz)) # frequency in Hertz
@@ -349,11 +345,6 @@ def measure():
     stopFrequency = on_select_stop(stopFrequency)
     reference = on_select_res(reference)
     amplitude = on_select_amp(amplitude)
-    # measure_interval = int(measure_interval_entry.get())
-
-    # if measurements_running:
-    #     interval = int(measure_interval_entry.get()) * 60
-    #     root.after(interval, measure)
 
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude)).start()
@@ -491,7 +482,9 @@ measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
 start_button = ttk.Button(
     frame_settings,
     text='Start Measurement',
-    command=start_repeating
+    # Call the function to make the measurement
+    # command=threading.Thread(target=start_repeating).start
+    command= start_repeating
 )
 start_button.grid(column=0, row=4, padx=10, pady=10, sticky='NW')
 
