@@ -194,6 +194,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
     # Toolbar for impedance graph
+    ttk.Label(frame_settings, text="Impedance ToolBar: ").grid(row=4, column=1, padx=1, pady=1, sticky='e')
     toolbar_frame1 = tk.Frame(frame_settings)
     toolbar_frame1.grid(row=4, column=2, padx=1, pady=1, sticky='e')
     toolbar1 = NavigationToolbar2Tk(canvas1, toolbar_frame1)
@@ -214,6 +215,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     canvas2.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
 
     # Toolbar for phase angle graph
+    ttk.Label(frame_settings, text="Phase Angle ToolBar: ").grid(row=5, column=1, padx=1, pady=1, sticky='e')    
     toolbar_frame2 = tk.Frame(frame_settings)
     toolbar_frame2.grid(row=5, column=2, padx=1, pady=1, sticky='e')
     toolbar2 = NavigationToolbar2Tk(canvas2, toolbar_frame2)
@@ -234,6 +236,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     canvas3.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
 
     # tool bar functionality for Nyquist graph
+    ttk.Label(frame_settings, text="Nyquist ToolBar: ").grid(row=6, column=1, padx=1, pady=1, sticky='e')    
     toolbar_frame3 = tk.Frame(frame_settings)
     toolbar_frame3.grid(row=6, column=2, padx=1, pady=1, sticky='e')
     toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame3)
@@ -481,11 +484,8 @@ resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set d
 
 # Add Measurement Interval entry to frame_settings
 ttk.Label(frame_settings, text="Enter Interval In Minutes:").grid(row=2, column=2, padx=5, pady=5, sticky='NW')
-# measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every ___ Minute(s)")
-# measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry = ttk.Entry(frame_settings)
 measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
-# measure_interval_entry.insert(0, "1")  # Default value
 
 # start button
 start_button = ttk.Button(
