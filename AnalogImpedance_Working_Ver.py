@@ -23,6 +23,7 @@ import os
 import csv 
 import threading
 from tkinter import messagebox
+import time
 
 # creation of directory
 output_dir = "Impedance_Data_Collection"
@@ -32,7 +33,7 @@ if not os.path.exists(output_dir):
 measurements_running = False
         
 #How the impedance Anaylyzer actully works and makes Measurments
-def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, makeMeasureTime):
+def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     #Capture Current Date
     current_date = datetime.now()
     nowY = current_date.year
@@ -336,23 +337,47 @@ def on_select_res(event):
 
 # Function to start the measurement
 def measure():
-    if not measurements_running:
-        return
-    global startFrequency, stopFrequency, amplitude, reference, measure_interval
+    # if not measurements_running:
+    #     return
+    global startFrequency, stopFrequency, amplitude, reference
     # Update global variables with the selected values
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
     stopFrequency = on_select_stop(stopFrequency)
     reference = on_select_res(reference)
     amplitude = on_select_amp(amplitude)
-    measure_interval = int(measure_interval_entry.get())
+    # measure_interval = int(measure_interval_entry.get())
 
     # if measurements_running:
     #     interval = int(measure_interval_entry.get()) * 60
     #     root.after(interval, measure)
 
     # Call the function to make the measurement
-    threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, measure_interval)).start()
+    threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude)).start()
+
+# Function to get user input and call_repeatedly
+def start_repeating():
+    try:
+        interval = int(measure_interval_entry.get())
+        if interval <= 0:
+            raise ValueError("Interval must be positive")
+        interval_ms = interval * 60 * 1000
+        call_repeatedly(interval_ms)
+    except ValueError as e:
+        messagebox.showerror("Invalid Input", str(e))
+
+# Function to repeatedly call desired function
+def call_repeatedly(interval_ms):
+    global job
+    measure()
+    job = root.after(interval_ms, call_repeatedly,  interval_ms)
+# Function to stop the interval calling
+def stop_repeating():
+    global job
+    if job:
+        root.after_cancel(job)
+        job = None
+job = None
 
 # Create the main window
 root = tk.Tk()
@@ -455,51 +480,25 @@ resistance_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='NW')
 resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set default value to 100 Hz
 
 # Add Measurement Interval entry to frame_settings
-measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every ___ Minute(s)")
-measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
+ttk.Label(frame_settings, text="Enter Interval In Minutes:").grid(row=2, column=2, padx=5, pady=5, sticky='NW')
+# measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every ___ Minute(s)")
+# measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry = ttk.Entry(frame_settings)
 measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
-measure_interval_entry.insert(0, "1")  # Default value
-
-# measure_interval_entry_time_length = ttk.Combobox(frame_settings, textvariable='interval')
-# measure_interval_entry_time_length.grid(row=4, column=2, padx=5, pady=5, sticky='NW')
-# measure_interval_entry_time_length['values'] = ('minute', 'hour')
-# measure_interval_entry_time_length.current(0)
-
-# Add a Text widget to display log messages
-# log_text = tk.Text(frame_graphs, wrap='word', height=10)
-# log_text.grid(row=8, column=0, columnspan=3, padx=5, pady=5, sticky='nsew')
-
-# Add a label to display the step count
-# log_label = tk.Label(frame_settings, text="Step: 0")
-# log_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
-
-# # Add step count label
-# step_count_label = tk.Label(frame_settings, text="Step Count: 0/0")
-# step_count_label.grid(row=7, column=0, padx=5, pady=5, sticky='NW')
-
-# starts measurement process
-def start_measurements():
-    global measurements_running 
-    measurements_running = True
-    measure()
-
-def stop_measurements():
-    global measurements_running
-    measurements_running = False
+# measure_interval_entry.insert(0, "1")  # Default value
 
 # start button
 start_button = ttk.Button(
     frame_settings,
     text='Start Measurement',
-    command=start_measurements
+    command=start_repeating
 )
 start_button.grid(column=0, row=4, padx=10, pady=10, sticky='NW')
 
 stop_button = ttk.Button(
     frame_settings,
     text='Stop',
-    command=stop_measurements
+    command=stop_repeating
 )
 stop_button.grid(column=1, row=4, padx=10, pady=10, sticky='NW')
 
