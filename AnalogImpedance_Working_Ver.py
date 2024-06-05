@@ -177,65 +177,65 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude, 
 
     print(f"Data saved to {csv_filename}")
 
-    # Create the nyquist graph
-    fig1, ax1 = plt.subplots(figsize=(2,1))
-    # fig1 = plt.figure(linewidth=10, edgecolor='black')
-    ax1.plot(rgRs, rgXs, linewidth='1')
-    fig1.suptitle('Nyquist', fontsize= 8)
-    fig1.patch.set_alpha(0.0)  # Make the figure background transparent
-    ax1.patch.set_alpha(0.0)   # Make the axes background transparent
-    canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-    plt.xticks(fontsize=5)
-    plt.yticks(fontsize=3)
-    plt.xlabel("Resistance (Ohms)", fontsize = 5)
-    plt.ylabel("-Reactance (Ohms)", fontsize = 5)
-    canvas1.draw()
-    canvas1.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
-
-    # tool bar functionality for Nyquist graph
-    toolbar_frame1 = tk.Frame(frame_settings)
-    toolbar_frame1.grid(row=5, column=2, padx=1, pady=1, sticky='w')
-    toolbar1 = NavigationToolbar2Tk(canvas1, toolbar_frame1)
-
     # Create the impedance graph
-    fig1, ax2 = plt.subplots(figsize=(2,1))
+    fig1, ax1 = plt.subplots(figsize=(2,1))
     # ax2.set_title('Impedance')
     fig1.suptitle('Impedance', fontsize = 8)
     # ax1.legend()
-    ax2.plot(rgHz, rgZ, linewidth='1')
+    ax1.plot(rgHz, rgZ, linewidth='1')
     plt.xscale("log")
     plt.xticks(fontsize=5)
     plt.yticks(fontsize=5)
     plt.xlabel("Frequency (Hz)", fontsize = 5)
     plt.ylabel("Magnitude(Ohms)", fontsize = 5)
-    canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-    canvas2.draw()
-    canvas2.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
+    canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    canvas1.draw()
+    canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
-    # # tool bar functionality for impedance graph
-    toolbar_frame2 = tk.Frame(frame_settings)
-    toolbar_frame2.grid(row=7, column=0, padx=1, pady=1, sticky='e')
-    toolbar2 = NavigationToolbar2Tk(canvas2, toolbar_frame1)
+    # Toolbar for impedance graph
+    toolbar_frame1 = tk.Frame(frame_settings)
+    toolbar_frame1.grid(row=4, column=2, padx=1, pady=1, sticky='e')
+    toolbar1 = NavigationToolbar2Tk(canvas1, toolbar_frame1)
 
     # Create the phase angle graph
-    fig1, ax3 = plt.subplots(figsize=(2,1))
+    fig1, ax2 = plt.subplots(figsize=(2,1))
     # ax3.set_title('Phase Angle')
     fig1.suptitle('Phase Angle', fontsize=8)
     # ax3.legend()
-    ax3.plot(rgHz, rgPhase, linewidth='1')
+    ax2.plot(rgHz, rgPhase, linewidth='1')
     plt.xscale("log")
     plt.xticks(fontsize=5)
     plt.yticks(fontsize=5)
     plt.xlabel("Frequency (Hz)", fontsize = 5)
     plt.ylabel("Phase (degrees)", fontsize = 5)
-    canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
-    canvas3.draw()
-    canvas3.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
+    canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    canvas2.draw()
+    canvas2.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
 
-    # tool bar functionality for phase angle graph
+    # Toolbar for phase angle graph
+    toolbar_frame2 = tk.Frame(frame_settings)
+    toolbar_frame2.grid(row=5, column=2, padx=1, pady=1, sticky='e')
+    toolbar2 = NavigationToolbar2Tk(canvas2, toolbar_frame2)
+
+    # Create the nyquist graph
+    fig1, ax3 = plt.subplots(figsize=(2,1))
+    # fig1 = plt.figure(linewidth=10, edgecolor='black')
+    ax3.plot(rgRs, rgXs, linewidth='1')
+    fig1.suptitle('Nyquist', fontsize= 8)
+    fig1.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax3.patch.set_alpha(0.0)   # Make the axes background transparent
+    canvas3 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    plt.xticks(fontsize=5)
+    plt.yticks(fontsize=3)
+    plt.xlabel("Resistance (Ohms)", fontsize = 5)
+    plt.ylabel("-Reactance (Ohms)", fontsize = 5)
+    canvas3.draw()
+    canvas3.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
+
+    # tool bar functionality for Nyquist graph
     toolbar_frame3 = tk.Frame(frame_settings)
-    toolbar_frame3.grid(row=7, column=1, padx=1, pady=1, sticky='e')
-    toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame1)
+    toolbar_frame3.grid(row=6, column=2, padx=1, pady=1, sticky='e')
+    toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame3)
     
 # end of def makeMeasurement 
 
@@ -338,14 +338,14 @@ def on_select_res(event):
 def measure():
     if not measurements_running:
         return
-    global startFrequency, stopFrequency, amplitude, reference
+    global startFrequency, stopFrequency, amplitude, reference, measure_interval
     # Update global variables with the selected values
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
     stopFrequency = on_select_stop(stopFrequency)
     reference = on_select_res(reference)
     amplitude = on_select_amp(amplitude)
-    measure_interval = float(measure_interval_entry.get())
+    measure_interval = int(measure_interval_entry.get())
 
     # if measurements_running:
     #     interval = int(measure_interval_entry.get()) * 60
@@ -455,16 +455,16 @@ resistance_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='NW')
 resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set default value to 100 Hz
 
 # Add Measurement Interval entry to frame_settings
-measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every  ")
+measure_interval_label = tk.Label(frame_settings, text="Measure Intervals for Every ___ Minute(s)")
 measure_interval_label.grid(row=2, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry = ttk.Entry(frame_settings)
 measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry.insert(0, "1")  # Default value
 
-measure_interval_entry_time_length = ttk.Combobox(frame_settings, textvariable='interval')
-measure_interval_entry_time_length.grid(row=4, column=2, padx=5, pady=5, sticky='NW')
-measure_interval_entry_time_length['values'] = ('minute', 'hour')
-measure_interval_entry_time_length.current(0)
+# measure_interval_entry_time_length = ttk.Combobox(frame_settings, textvariable='interval')
+# measure_interval_entry_time_length.grid(row=4, column=2, padx=5, pady=5, sticky='NW')
+# measure_interval_entry_time_length['values'] = ('minute', 'hour')
+# measure_interval_entry_time_length.current(0)
 
 # Add a Text widget to display log messages
 # log_text = tk.Text(frame_graphs, wrap='word', height=10)
