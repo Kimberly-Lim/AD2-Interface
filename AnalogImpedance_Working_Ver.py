@@ -98,10 +98,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
         log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
         root.update()
 
-        # # Add a label to display the step count
-        # log_label = tk.Label(frame_settings, text="Step Count: " + str(i + 1))
-        # log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
-
         # Update the step count label on the GUI thread
         total_steps = int(steps_entry.get())
 
@@ -176,9 +172,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
 
     # Create the impedance graph
     fig1, ax1 = plt.subplots(figsize=(2,1))
-    # ax2.set_title('Impedance')
     fig1.suptitle('Impedance', fontsize = 8)
-    # ax1.legend()
     ax1.plot(rgHz, rgZ, linewidth='1')
     plt.xscale("log")
     plt.xticks(fontsize=5)
@@ -186,6 +180,9 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     plt.xlabel("Frequency (Hz)", fontsize = 5)
     plt.ylabel("Magnitude(Ohms)", fontsize = 5)
     canvas1 = FigureCanvasTkAgg(fig1, master=frame_graphs)
+    fig1.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax1.patch.set_alpha(0.0)   # Make the axes background transparent
+    canvas1.get_tk_widget().configure(bg=default_bg_color)  # Match the background color
     canvas1.draw()
     canvas1.get_tk_widget().grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
 
@@ -197,18 +194,19 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
 
     # Create the phase angle graph
     fig1, ax2 = plt.subplots(figsize=(2,1))
-    # ax3.set_title('Phase Angle')
     fig1.suptitle('Phase Angle', fontsize=8)
-    # ax3.legend()
+    fig1.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax2.patch.set_alpha(0.0)   # Make the axes background transparent
     ax2.plot(rgHz, rgPhase, linewidth='1')
     plt.xscale("log")
     plt.xticks(fontsize=5)
     plt.yticks(fontsize=5)
+    canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
     plt.xlabel("Frequency (Hz)", fontsize = 5)
     plt.ylabel("Phase (degrees)", fontsize = 5)
-    canvas2 = FigureCanvasTkAgg(fig1, master=frame_graphs)
     canvas2.draw()
     canvas2.get_tk_widget().grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
+    canvas2.get_tk_widget().configure(bg=default_bg_color)  # Match the background color
 
     # Toolbar for phase angle graph
     ttk.Label(frame_settings, text="Phase Angle ToolBar: ").grid(row=5, column=1, padx=1, pady=1, sticky='e')    
@@ -218,7 +216,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
 
     # Create the nyquist graph
     fig1, ax3 = plt.subplots(figsize=(2,1))
-    # fig1 = plt.figure(linewidth=10, edgecolor='black')
     ax3.plot(rgRs, rgXs, linewidth='1')
     fig1.suptitle('Nyquist', fontsize= 8)
     fig1.patch.set_alpha(0.0)  # Make the figure background transparent
@@ -230,6 +227,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     plt.ylabel("-Reactance (Ohms)", fontsize = 5)
     canvas3.draw()
     canvas3.get_tk_widget().grid(row=0, column=1, rowspan=3, padx=5, pady=5, sticky='nsew')
+    canvas3.get_tk_widget().configure(bg=default_bg_color)  # Match the background color
 
     # tool bar functionality for Nyquist graph
     ttk.Label(frame_settings, text="Nyquist ToolBar: ").grid(row=6, column=1, padx=1, pady=1, sticky='e')    
@@ -336,8 +334,6 @@ def on_select_res(event):
 
 # Function to start the measurement
 def measure():
-    # if not measurements_running:
-    #     return
     global startFrequency, stopFrequency, amplitude, reference
     # Update global variables with the selected values
     steps = int(steps_entry.get())
@@ -345,9 +341,21 @@ def measure():
     stopFrequency = on_select_stop(stopFrequency)
     reference = on_select_res(reference)
     amplitude = on_select_amp(amplitude)
-
     # Call the function to make the measurement
     threading.Thread(target=makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude)).start()
+
+# Create the main window
+root = tk.Tk()
+fig, ax = plt.subplots()
+root.title("Measurement Settings")
+default_bg_color = root.cget('bg')
+
+# Set the window size
+root.geometry("1200x600")
+
+# Create a frame for the settings
+frame_settings = tk.Frame(root, bg='white')
+frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
 
 # Function to get user input and call_repeatedly
 def start_repeating():
@@ -356,7 +364,7 @@ def start_repeating():
         if interval <= 0:
             raise ValueError("Interval must be positive")
         interval_ms = interval * 60 * 1000
-        call_repeatedly(interval_ms)
+        call_repeatedly(interval_ms)    
     except ValueError as e:
         messagebox.showerror("Invalid Input", str(e))
 
@@ -364,19 +372,38 @@ def start_repeating():
 def call_repeatedly(interval_ms):
     global job
     measure()
-    job = root.after(interval_ms, call_repeatedly,  interval_ms)
+    start_countdown(interval_ms // 1000)
+    job = root.after(interval_ms, lambda: call_repeatedly(interval_ms))
 # Function to stop the interval calling
 def stop_repeating():
-    global job
+    global job, countdown_job
     if job:
         root.after_cancel(job)
         job = None
-job = None
+    if countdown_job:
+        root.after_cancel(countdown_job)
+        countdown_job = None
+    countdown_label.config(text="00:00")
+# Function to handle the countdown
+def start_countdown(seconds):
+    global countdown_job
+    def update_countdown():
+        nonlocal seconds
+        minutes, secs = divmod(seconds, 60)
+        countdown_label.config(text=f"Next call in: {minutes:02}:{secs:02}") 
+        # countdown_label = tk.Label(frame_settings, text=f"Next call in: {minutes:02}:{secs:02}")       
+        if seconds > 0:
+            global countdown_job
+            seconds -=1
+            countdown_job = root.after(1000, update_countdown)
+    update_countdown()
 
-# Create the main window
-root = tk.Tk()
-fig, ax = plt.subplots()
-root.title("Measurement Settings")
+# Initialize global variables
+countdown_label = tk.Label(frame_settings, text="00:00")
+countdown_label.grid(row=8, column=2, padx=2, pady=2, sticky='NW')
+root.update()
+job = None
+countdown_job = None
 
 # Make the main window's grid layout adjustable
 root.columnconfigure(0, weight=1)
@@ -387,10 +414,6 @@ root.rowconfigure(1, weight=1)
 root.rowconfigure(2, weight=2)
 root.rowconfigure(3, weight=2)
 
-# Create a frame for the settings
-frame_settings = tk.Frame(root)
-frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
-
 # Configure grid layout for frame_settings
 frame_settings.columnconfigure(0, weight=1)
 frame_settings.columnconfigure(1, weight=1)
@@ -400,7 +423,7 @@ frame_settings.rowconfigure(1, weight=1)
 frame_settings.rowconfigure(2, weight=1)
 
 # Create a frame for the graphs
-frame_graphs = tk.Frame(root)
+frame_graphs = tk.Frame(root, bg=default_bg_color)
 frame_graphs.grid(row=2, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
 
 # Make the frame expand with the window
@@ -409,9 +432,6 @@ frame_graphs.columnconfigure(1, weight=1)
 frame_graphs.columnconfigure(2, weight=1)
 frame_graphs.rowconfigure(0, weight=1)
 frame_graphs.rowconfigure(1, weight=1)
-
-# Set the window size
-root.geometry("1200x600")
 
 # Make the main window's grid layout adjustable
 root.columnconfigure(0, weight=1)
