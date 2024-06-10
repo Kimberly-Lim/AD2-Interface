@@ -90,6 +90,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     rgIv = [0.0]*steps # imag voltage
     rgRc = [0.0]*steps # real current
     rgIc = [0.0]*steps # imag current
+    rgSc = [0.0]*steps # series capacitance 
 
     for i in range(steps):
         hz = stop_numeric_value * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop_numeric_value/start_numeric_value)) # exponential frequency steps
@@ -122,6 +123,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
         imagVoltage = c_double()
         realCurrent = c_double()
         imagCurrent = c_double()
+        seriesCap = c_double()
 
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceResistance, byref(resistance))
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceReactance, byref(reactance))
@@ -130,7 +132,8 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceVreal, byref(realVoltage))      
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceVimag, byref(imagVoltage)) 
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIreal, byref(realCurrent))      
-        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIimag, byref(imagCurrent))                
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIimag, byref(imagCurrent))    
+        dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceSeriesCapacitance, byref(seriesCap))          
 
         rgRs[i] = abs(resistance.value) # absolute value for logarithmic plot
         rgXs[i] = abs(reactance.value)
@@ -140,13 +143,14 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
         rgIv[i] = abs(imagVoltage.value)
         rgRc[i] = abs(realCurrent.value)
         rgIc[i] = abs(imagCurrent.value)
+        rgSc[i] = abs(seriesCap.value) 
 
         now_time = now + '_at_' + current_time + '_data'
 
         data = pd.DataFrame({
                              'Frequency(Hz)': rgHz,'Impedance(Ohm)' : rgZ, 'Absolute Resistance(Ohm)': rgRs, 
                              'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase, 'Real Voltage(volts)': rgRv, 'Imaginary Voltage(volts)': rgIv, 
-                              'Real Current(amps)': rgRc, 'Imaginary Current(amps)': rgIc })
+                              'Real Current(amps)': rgRc, 'Imaginary Current(amps)': rgIc, 'Series Capacitance(F)' : rgSc })
 
         # Save the DataFrame to a CSV file
         csv_filename = os.path.join(output_dir, f"Impedance_Data_{now}_{current_time}.csv")
@@ -369,7 +373,7 @@ default_bg_color = root.cget('bg')
 root.geometry("1200x600")
 
 # Create a frame for the settings
-frame_settings = tk.Frame(root, bg='white')
+frame_settings = tk.Frame(root)
 frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
 
 # Function to get user input and call_repeatedly
@@ -402,7 +406,7 @@ def stop_repeating():
     if countdown_job:
         root.after_cancel(countdown_job)
         countdown_job = None
-    countdown_label.config(text="Next call in: 00:00")
+    countdown_label.config(text="00:00")
 
 # Function to handle the countdown
 def start_countdown(seconds):
@@ -456,15 +460,13 @@ root.rowconfigure(2, weight=2)
 root.rowconfigure(3, weight=2)
 
 # Create a frame for the settings
-frame_settings = tk.Frame(root)
-frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
-
+# frame_settings = tk.Frm
 # Initialize global variables
 countdown_label = tk.Label(frame_settings, text="Next call in: 00:00")
 countdown_label.grid(row=6, column=0, padx=2, pady=2, sticky='NW')
 job = None
 countdown_job = None
-root.update()
+# root.update()
 
 # Configure grid layout for frame_settings
 frame_settings.columnconfigure(0, weight=1)
@@ -517,6 +519,10 @@ resistance_dropdown.current(list(reference_dict.keys()).index("1 kΩ"))  # Set d
 ttk.Label(frame_settings, text="Enter Interval In Minutes:").grid(row=2, column=2, padx=5, pady=5, sticky='NW')
 measure_interval_entry = ttk.Entry(frame_settings)
 measure_interval_entry.grid(row=3, column=2, padx=5, pady=5, sticky='NW')
+
+def reset_and_start():
+    reset_measurements()
+    start_repeating()
 
 # start button
 start_button = ttk.Button(
