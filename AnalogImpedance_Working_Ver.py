@@ -250,7 +250,7 @@ def reset_measurements():
     global total_steps
     global log_label
     total_steps = []
-    log_label.config(text="Step Count Progress: 0")
+    # log_label.config(text="Step Count Progress: 0")
 
     # Clear existing plots
     for widget in frame_graphs.winfo_children():
@@ -530,7 +530,7 @@ start_button = ttk.Button(
     text='Start Measurement',
     # Call the function to make the measurement
     # command=threading.Thread(target=start_repeating).start
-    command= start_repeating
+    command= reset_and_start
 )
 start_button.grid(column=0, row=4, padx=10, pady=10, sticky='NW')
 
