@@ -94,9 +94,10 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     for i in range(steps):
         hz = stop_numeric_value * pow(10.0, 1.0*(1.0*i/(steps-1)-1)*math.log10(stop_numeric_value/start_numeric_value)) # exponential frequency steps
         # log_label =tk.Label(frame_settings, text=f"Step: {i + 1} Frequency: {hz:.2f} Hz")
+        global log_label 
         log_label =tk.Label(frame_settings, text=f"Step Count Progress: {i + 1}")
         log_label.grid(row=5, column=0, padx=5, pady=5, sticky='NW')
-        root.update()
+        root.update() # docs say this is harmful? steps won't dynamically update without it 
 
         # Update the step count label on the GUI thread
         total_steps = int(steps_entry.get())
@@ -130,7 +131,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceVimag, byref(imagVoltage)) 
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIreal, byref(realCurrent))      
         dwf.FDwfAnalogImpedanceStatusMeasure(hdwf, DwfAnalogImpedanceIimag, byref(imagCurrent))                
-        # add other measurements here (impedance, impedanceVReal impedanceVImag, impedancelreal, impedancelimag)
 
         rgRs[i] = abs(resistance.value) # absolute value for logarithmic plot
         rgXs[i] = abs(reactance.value)
@@ -235,7 +235,22 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     toolbar_frame3.grid(row=6, column=2, padx=1, pady=1, sticky='e')
     toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame3)
     
+    total_steps = []
+    # root.after(10000, reset_measurements)  # 10-second delay before reset
+    # reset_measurements()
+
 # end of def makeMeasurement 
+
+# function to reset measurements
+def reset_measurements():
+    global total_steps
+    global log_label
+    total_steps = []
+    log_label.config(text="Step Count Progress: 0")
+
+    # Clear existing plots
+    for widget in frame_graphs.winfo_children():
+        widget.destroy()
 
 #Extracts Steps value from GUI
 def update_steps(*args):
@@ -359,18 +374,22 @@ frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, 
 
 # Function to get user input and call_repeatedly
 def start_repeating():
+    # global log_label
+    # reset_measurements()
     try:
         interval = int(measure_interval_entry.get())
         if interval <= 0:
             raise ValueError("Interval must be positive")
         interval_ms = interval * 60 * 1000
         call_repeatedly(interval_ms)    
+        start_countdown(interval * 60)
     except ValueError as e:
         messagebox.showerror("Invalid Input", str(e))
 
 # Function to repeatedly call desired function
 def call_repeatedly(interval_ms):
     global job
+    # reset_measurements
     measure()
     start_countdown(interval_ms // 1000)
     job = root.after(interval_ms, lambda: call_repeatedly(interval_ms))
@@ -383,7 +402,8 @@ def stop_repeating():
     if countdown_job:
         root.after_cancel(countdown_job)
         countdown_job = None
-    countdown_label.config(text="00:00")
+    countdown_label.config(text="Next call in: 00:00")
+
 # Function to handle the countdown
 def start_countdown(seconds):
     global countdown_job
@@ -393,17 +413,10 @@ def start_countdown(seconds):
         countdown_label.config(text=f"Next call in: {minutes:02}:{secs:02}") 
         # countdown_label = tk.Label(frame_settings, text=f"Next call in: {minutes:02}:{secs:02}")       
         if seconds > 0:
-            global countdown_job
             seconds -=1
+            global countdown_job
             countdown_job = root.after(1000, update_countdown)
     update_countdown()
-
-# Initialize global variables
-countdown_label = tk.Label(frame_settings, text="00:00")
-countdown_label.grid(row=8, column=2, padx=2, pady=2, sticky='NW')
-root.update()
-job = None
-countdown_job = None
 
 # Make the main window's grid layout adjustable
 root.columnconfigure(0, weight=1)
@@ -445,6 +458,13 @@ root.rowconfigure(3, weight=2)
 # Create a frame for the settings
 frame_settings = tk.Frame(root)
 frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, sticky='nsew')
+
+# Initialize global variables
+countdown_label = tk.Label(frame_settings, text="Next call in: 00:00")
+countdown_label.grid(row=6, column=0, padx=2, pady=2, sticky='NW')
+job = None
+countdown_job = None
+root.update()
 
 # Configure grid layout for frame_settings
 frame_settings.columnconfigure(0, weight=1)
