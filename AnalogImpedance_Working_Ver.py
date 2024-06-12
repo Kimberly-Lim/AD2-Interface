@@ -152,10 +152,26 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
                              'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase, 'Real Voltage(volts)': rgRv, 'Imaginary Voltage(volts)': rgIv, 
                               'Real Current(amps)': rgRc, 'Imaginary Current(amps)': rgIc, 'Series Capacitance(F)' : rgSc })
 
+        # # Combine all the information into a single string
+        combined_info = (
+            f"DWF Version: {version.value}\n "
+            f"Steps: {steps}\n "
+            f"Start Frequency (Hz): {startFrequency}\n "
+            f"Stop Frequency (Hz): {stopFrequency}\n "
+            f"Amplitude (V): {amplitude}\n "
+            f"Reference Resistance (Ω): {reference}"
+        )
+
+        # Create a DataFrame with the combined info in one cell
+        data2 = pd.DataFrame({'Impedance Analyzer Configuration': [combined_info]})
+
+        # Concatenate data2 and data
+        combined_data = pd.concat([data2, data], axis=0, ignore_index=True)
+
         # Save the DataFrame to a CSV file
         csv_filename = os.path.join(output_dir, f"Impedance_Data_{now}_{current_time}.csv")
-        data.to_csv(csv_filename, index=False)
-        
+        combined_data.to_csv(csv_filename, index=False)
+
         for iCh in range(2):
             warn = c_int()
             dwf.FDwfAnalogImpedanceStatusWarning(hdwf, c_int(iCh), byref(warn))
@@ -172,7 +188,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(0)) # stop
     dwf.FDwfDeviceClose(hdwf)
 
-    print(f"Data saved to {csv_filename}")
+    # print(f"Data saved to {combined_info}")
 
     # Create the impedance graph
     fig1, ax1 = plt.subplots(figsize=(2,1))
@@ -261,7 +277,7 @@ def update_steps(*args):
     global steps_int
     try:
         # Convert the entry to an integer
-        steps_int = int(steps.get())
+        steps_int = int(steps_entry.get())
         if steps_int < 0:
             # raise ValueError("Steps cannot be negative.")
             messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
@@ -383,7 +399,7 @@ def start_repeating():
     try:
         interval = int(measure_interval_entry.get())
         if interval <= 0:
-            raise ValueError("Interval must be positive")
+            raise ValueError("Interval must be greater than 0")
         interval_ms = interval * 60 * 1000
         call_repeatedly(interval_ms)    
         start_countdown(interval * 60)
