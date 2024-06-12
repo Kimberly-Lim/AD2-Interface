@@ -303,13 +303,25 @@ startFrequency = None
 stopFrequency = None 
 amplitude = None
 reference = None
+steps_int = None
+# Initialize global numeric values
+start_numeric_value = frequency_dict["100 Hz"]
+stop_numeric_value = frequency_dict["1 MHz"]
 
 def on_select_start(event):
     global startFrequency
     global start_numeric_value
-    startFrequency = startF_dropdown.get()
-    start_numeric_value = frequency_dict[startFrequency]
-    print(f"Selected: {startFrequency}, Numeric Value: {start_numeric_value}")
+    global stop_numeric_value
+
+    try: 
+        startFrequency = startF_dropdown.get()
+        start_numeric_value = frequency_dict[startFrequency]
+
+        if start_numeric_value > stop_numeric_value or  stop_numeric_value < stop_numeric_value:
+            messagebox.showerror('Frequency Selection Error' , 'Frequency Selection Out of Bounds')
+    
+    except ValueError as e:
+        print("Frequency Selection Out of Bounds")
 
     return start_numeric_value
 
@@ -317,10 +329,18 @@ def on_select_start(event):
 def on_select_stop(event):
     global stopFrequency
     global stop_numeric_value
+    global stop_numeric_value
+
     stopFrequency = stopF_dropdown.get()
     stop_numeric_value = frequency_dict[stopFrequency]
-    print(f"Selected: {stopFrequency}, Numeric Value: {stop_numeric_value}")
 
+    try:
+        if start_numeric_value > stop_numeric_value:
+            messagebox.showerror('Frequency Selection Error' , 'Frequency Selection Out of Bounds')
+    
+    except ValueError as e:
+        print("Frequency Selection Out of Bounds")
+    
     return stop_numeric_value
 
 # Dictionary for amplitude values
@@ -370,6 +390,15 @@ def on_select_res(event):
 # Function to start the measurement
 def measure():
     global startFrequency, stopFrequency, amplitude, reference
+
+    # Validate the steps input
+    if steps_entry.get().isdigit() and int(steps_entry.get()) > 0:
+        steps_int = int(steps_entry.get())
+    else:
+        messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
+        countdown_label.config("00:00")
+        return
+
     # Update global variables with the selected values
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
