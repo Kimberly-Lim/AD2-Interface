@@ -439,8 +439,6 @@ def call_repeatedly(interval_ms):
     global job
     start_countdown(interval_ms // 1000)
     measure()
-    measure()
-    measure()
     job = root.after(interval_ms, lambda: call_repeatedly(interval_ms))
 
 def stop_repeating(): # doesnt take another measurement, however the countdown timer still operates and step doesnt go to 0
