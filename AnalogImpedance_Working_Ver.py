@@ -256,9 +256,6 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame3)
     
     total_steps = []
-    # root.after(10000, reset_measurements)  # 10-second delay before reset
-    # reset_measurements()
-
 # end of def makeMeasurement 
 
 # function to reset measurements
@@ -282,9 +279,12 @@ def update_steps(*args):
             # raise ValueError("Steps cannot be negative.")
             messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
             print("Updated Steps to:", steps_int)
+            countdown_label.config("00:00")
 
     except ValueError as e:
         print("Invalid input for steps. Please enter a positive integer")
+    
+    return countdown_label.config("00:00")
 
 # Dictionary for frequency values
 frequency_dict = {
@@ -307,6 +307,7 @@ steps_int = None
 # Initialize global numeric values
 start_numeric_value = frequency_dict["100 Hz"]
 stop_numeric_value = frequency_dict["1 MHz"]
+countdown_label = "00:00"
 
 def on_select_start(event):
     global startFrequency
@@ -396,7 +397,7 @@ def measure():
         steps_int = int(steps_entry.get())
     else:
         messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
-        countdown_label.config("00:00")
+        reset_measurements()
         return
 
     # Update global variables with the selected values
@@ -423,39 +424,38 @@ frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, 
 
 # Function to get user input and call_repeatedly
 def start_repeating():
-    # global log_label
-    # reset_measurements()
     try:
         interval = int(measure_interval_entry.get())
         if interval <= 0:
             raise ValueError("Interval must be greater than 0")
         interval_ms = interval * 60 * 1000
-        call_repeatedly(interval_ms)    
         start_countdown(interval * 60)
+        call_repeatedly(interval_ms)    
     except ValueError as e:
         messagebox.showerror("Invalid Input", str(e))
 
 # Function to repeatedly call desired function
 def call_repeatedly(interval_ms):
     global job
-    # reset_measurements
-    measure()
     start_countdown(interval_ms // 1000)
+    measure()
+    measure()
+    measure()
     job = root.after(interval_ms, lambda: call_repeatedly(interval_ms))
-# Function to stop the interval calling
-def stop_repeating():
-    global job, countdown_job
-    if job:
-        root.after_cancel(job)
-        job = None
-    if countdown_job:
-        root.after_cancel(countdown_job)
-        countdown_job = None
-    countdown_label.config(text="00:00")
+
+def stop_repeating(): # doesnt take another measurement, however the countdown timer still operates and step doesnt go to 0
+    global job, countdown_timer, log_label # job: variable to manage repeated task. countdown_timer: manages countdown timer 
+    root.after_cancel(job) # stops repeated task
+    root.after_cancel(countdown_timer) # stops countdown timer but lags and goes back to counting 
+
+    print("Stop button clicked")
+    countdown_label.config(text="testing") # updates but doesnt stay until clicked again? 
+    # log_label =tk.Label(frame_settings, text=f"Step Count Progress: 0")
+    log_label.config(text="Step Count Progress: 0")
 
 # Function to handle the countdown
 def start_countdown(seconds):
-    global countdown_job
+    global countdown_timer
     def update_countdown():
         nonlocal seconds
         minutes, secs = divmod(seconds, 60)
@@ -463,8 +463,8 @@ def start_countdown(seconds):
         # countdown_label = tk.Label(frame_settings, text=f"Next call in: {minutes:02}:{secs:02}")       
         if seconds > 0:
             seconds -=1
-            global countdown_job
-            countdown_job = root.after(1000, update_countdown)
+            global countdown_timer
+        countdown_timer = root.after(1000, update_countdown)
     update_countdown()
 
 # Make the main window's grid layout adjustable
@@ -509,8 +509,8 @@ root.rowconfigure(3, weight=2)
 # Initialize global variables
 countdown_label = tk.Label(frame_settings, text="Next call in: 00:00")
 countdown_label.grid(row=6, column=0, padx=2, pady=2, sticky='NW')
-job = None
-countdown_job = None
+job = None 
+countdown_timer = None
 # root.update()
 
 # Configure grid layout for frame_settings
