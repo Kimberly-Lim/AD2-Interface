@@ -4,9 +4,10 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
 import pandas as pd
-import math
 import numpy as np
 from pyswarms.single import GlobalBestPSO
+import math
+import matlab.engine
 
 # Frequency values dictionary
 frequency_values = {
@@ -23,159 +24,46 @@ frequency_values = {
 
 freq_keys = list(frequency_values.keys())
 
+selected_file_path = ""
 # Function to read the CSV file and plot the data
-# # def display_file_content(file_path):
-#     try:
-#         data = pd.read_csv(file_path)
-#         plot_data(data) # calls function to plot data
-#         global imported_data
-#         imported_data = data # Store the imported data globally for optimization
-#     except Exception as e:
-#         print("Error reading file:", e)
-
 def display_file_content(file_path):
-    encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
-    for encoding in encodings:
-        try:
-            data = pd.read_csv(file_path, encoding=encoding)
-            plot_data(data)
-            global imported_data
-            imported_data = data  # Store the imported data globally for optimization
-            return  # Exit the function if the file is read successfully
-        except Exception as e:
-            print(f"Error reading file with encoding {encoding}: {e}")
-    print("Failed to read the file with all tested encodings.")
+    try:
+        data = pd.read_csv(file_path)
+        plot_data(data) # calls function to plot data
+        global imported_data
+        imported_data = data # Store the imported data globally for optimization
+    except Exception as e:
+        print("Error reading file:", e)
 
 # Function to import a file
 def import_file():
+    global selected_file_path
     file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("CSV files", "*.csv"), ("All files", "*.*")])
     if file_path:
+        selected_file_path = file_path
         display_file_content(file_path)
 
-# Single Cole Model
-# def cole_model(params, freq): 
-#     global s, w
-#     s = 1*j * w 
-#     w = 2*math.pi*freq
-    # params = [alpha1, C1, R1, R2, alpha2, C2, alpha3, C3]
+def run_matlab_script():
+    try:
+        global selected_file_path
+        # Start MATLAB engine
+        eng = matlab.engine.start_matlab()
 
-# Function to optimize
-# def optimize():
-#     global freq, angle, Rs, Xs, Mag, Data, s, best_params, Rs_est, Xs_est
-    
-#     data = imported_data
-    
-    
-#     freq = data['Frequency(Hz)'] # Retrieving data from the .csv files
-#     angle = data['Phase(degrees)']
-#     Rs = data['Absolute Resistance(Ohm)']
-#     Xs = data['Absolute Reactance(Ohm)']
-#     Mag = (math.sqrt((Rs^2) + (Xs^2))) # Magnitude of resistance and reactance squared 
-#     Data = Mag * (math.exp(1j * angle * (math.pi/180))) # 1j is a imaginary number in python
+        # Add the directory containing your MATLAB script to the MATLAB path
+        eng.addpath(r'/Users/kimberly/Documents/MATLAB/IRES-Summer-2024', nargout=0)
 
-#     w = 2 * math.pi * freq
-#     s = 1j * w
-
-#     # Impedance function
-#     def fun(P, s):
-#         term1 = 1 / ((s**P[0]) * P[1])
-#         term2 = P[2] / (1 + (s**P[4]) * P[2] * P[5])
-#         term3 = P[3] / (1 + (s**P[6]) * P[3] * P[7])
-#         return term1 + term2 + term3
-
-#     # def obj_fun(params, s, experimental_data):
-#         model_data = fun(params, s)
-#         real_error = np.real(experimental_data) - np.real(experimental_data)
-#         imag_error = np.imag(experimental_data) - np.imag(experimental_data)
-#         error = real_error**2 + imag_error**2
-
-#         return np.sum(error)
-
-
-#     # Objective function
-#     def obj_fun(P):
-#         modeled_data = fun(P, s)
-#         real_error = np.real(Data) - np.real(modeled_data)
-#         imag_error = np.imag(Data) - np.imag(modeled_data)
-#         error = real_error**2 + imag_error**2
-#         return np.sum(error)
-
-#     # Bounds for the optimization
-#     lb = [0, 0, 0, 0, 0, 0, 0, 0]
-#     ub = [1, 100e-6, 1e6, 250e3, 1, 100e-6, 1, 100e-6]
-#     bounds = (lb, ub)
-
-#     # PSO parameters
-#     options = {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
-
-#     # Perform PSO optimization
-#     optimizer = GlobalBestPSO(n_particles=100, dimensions=8, options=options, bounds=bounds)
-#     cost, best_params = optimizer.optimize(obj_fun, iters=2000)
-
-#     # Estimate the impedance using the best parameters
-#     best_modeled_data = fun(best_params, s)
-#     Rs_est = np.abs(best_modeled_data) * np.cos(np.angle(best_modeled_data))
-#     Xs_est = np.abs(best_modeled_data) * np.sin(np.angle(best_modeled_data))
-
-#     plot_optimization_data()
-
-
-# # Function to plot the optimized data
-# def plot_optimization_data():
-#     plt.figure(figsize=(12, 8))
-
-#     plt.subplot(2, 1, 1)
-#     plt.semilogx(freq, Rs_est, 'r--', label='Approximation')
-#     plt.semilogx(freq, Rs, 'g--', label='Known')
-#     plt.grid(True, which='both')
-#     plt.xlabel('Frequency [Hz]')
-#     plt.ylabel('Magnitude [Ohms]')
-#     plt.legend()
-#     plt.title('Approx vs Known - Magnitude')
-
-#     plt.subplot(2, 1, 2)
-#     plt.semilogx(freq, Xs_est, 'r--', label='Approximation')
-#     plt.semilogx(freq, Xs, 'g--', label='Known')
-#     plt.grid(True, which='both')
-#     plt.xlabel('Frequency [Hz]')
-#     plt.ylabel('Phase [Ohms]')
-#     plt.legend()
-#     plt.title('Approx vs Known - Phase')
-
-#     plt.tight_layout()
-#     plt.show()
-
-#     # Nyquist plot
-#     plt.figure()
-#     plt.plot(Rs_est, -Xs_est, '.', linewidth=2, color=[0.6350, 0.0780, 0.1840], label='Estimated')
-#     plt.plot(Rs, -Xs, '.', linewidth=2, color=[0.3010, 0.7450, 0.9330], label='Actual')
-#     plt.xlabel("Rs")
-#     plt.ylabel("-Xs")
-#     plt.title("Nyquist plot")
-#     plt.legend()
-#     plt.show()
-
-#     # Percent difference calculations
-#     Rs_diff = np.abs(100 * (Rs_est - Rs) / Rs)
-#     Xs_diff = np.abs(100 * (Xs_est - Xs) / Xs)
-
-#     # Percent difference plotted over all frequencies
-#     plt.figure(figsize=(12, 8))
-
-#     plt.subplot(2, 1, 1)
-#     plt.semilogx(freq, Rs_diff)
-#     plt.xlabel("Frequency [Hz]")
-#     plt.ylabel("Rs percent difference")
-#     plt.title("Rs Difference")
-
-#     plt.subplot(2, 1, 2)
-#     plt.semilogx(freq, Xs_diff)
-#     plt.xlabel("Frequency [Hz]")
-#     plt.ylabel("Xs percent difference")
-#     plt.title("Xs Difference")
-
-#     plt.tight_layout()
-#     plt.show()
+        # Run the MATLAB script with the file path as an argument
+        eng.ColeReplaceR1WithC(selected_file_path, nargout=0)
+        
+        # Keep the figures open by preventing MATLAB from closing immediately
+        input("Press Enter to close the MATLAB figures and exit...")
+        
+    except matlab.engine.MatlabExecutionError as e:
+        print(f"MATLAB execution error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    finally:
+        eng.quit()
 
 # Function to plot data
 def plot_data(data):
@@ -232,7 +120,7 @@ root.title("Optimization")
 default_bg_color = root.cget('bg')
 
 # Set the window size
-root.geometry("1200x600")
+root.geometry("1100x600")
 
 # Create a frame for the settings
 frame_settings = tk.Frame(root, bg=default_bg_color)
@@ -247,7 +135,7 @@ import_button = tk.Button(frame_settings, text="Import File", command=import_fil
 import_button.grid(column=0, row=0, padx=10, pady=10, sticky='NW')
 
 # Button for optimization
-optimization_button = tk.Button(frame_settings, text="Optimize") # implement command 
+optimization_button = tk.Button(frame_settings, text="Optimize", command=run_matlab_script) # implement command 
 optimization_button.grid(column=0, row=1, padx=10, pady=10, sticky='NW')
 
 # Model label and dropdown
