@@ -278,7 +278,46 @@ def plot_wood_model():
     canvas.get_tk_widget().configure(bg='white')
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    
+
+def single_cole_warburg_impedance(frequencies, R1, R2, C_alpha, alpha, sigma):
+    omega = 2 * np.pi * frequencies
+    s = 1j * omega
+    Z_cole = R1 + (R2 - R1) / (1 + (s**alpha * C_alpha * (R2 - R1)))
+    Z_warburg = sigma * (1 - 1j) / np.sqrt(omega)
+    Z = Z_cole + Z_warburg
+    return Z
+
+def plot_single_cole_warburg_model():
+    new_window = Toplevel()
+    new_window.title("Single Cole Model with Warburg Element Graph")
+    frame_plots = tk.Frame(new_window)
+    frame_plots.pack(fill=tk.BOTH, expand=True)
+    f = np.logspace(-3, 6, num=500)
+    R1 = 1000
+    R2 = 21000
+    C_alpha = 25e-9
+    alpha = 0.75
+    sigma = 1.0  # Example value for Warburg coefficient
+    Z = single_cole_warburg_impedance(f, R1, R2, C_alpha, alpha, sigma)
+    Z_real = Z.real
+    Z_imag = -Z.imag
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(Z_real, Z_imag, 'm-', label='Single Cole Model with Warburg Element')
+    ax.set_xlabel("Z'($\Omega$)")
+    ax.set_ylabel("-Z''($\Omega$)")
+    ax.set_title('Single Cole Model with Warburg Element')
+    ax.text(0.1 * max(Z_real), 0.9 * max(Z_imag),
+            '$R_1 = 1k\Omega, R_2 = 21k\Omega, C_\\alpha = 25nF, \\alpha = 0.75, \\sigma = 1$',
+            fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    ax.legend()
+    ax.grid(True)
+    canvas = FigureCanvasTkAgg(fig, master=frame_plots)
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    canvas.get_tk_widget().configure(bg='white')
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
 def generate_model_graph():
     selected_model = model_dropdown.get()
     if selected_model == 'Single Cole Model':
@@ -290,7 +329,7 @@ def generate_model_graph():
         plot_wood_model()
         pass
     elif selected_model == 'Single Cole Model with Warburg Element':
-        # Add function call for Single Cole Model with Warburg Element
+        plot_single_cole_warburg_model()
         pass
 
 # Button to generate model
