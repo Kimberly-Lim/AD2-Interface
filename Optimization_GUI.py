@@ -239,6 +239,46 @@ def plot_double_cole_model():
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
+def wood_model_impedance(frequencies, R2, C1, alpha1, C2, alpha2):
+    # s is the complex frequency variable (jω where ω = 2πf)
+    omega = 2 * np.pi * frequencies
+    s = 1j * omega
+    Z1 = R2 / (1 + (s**alpha1 * C1 * R2))
+    Z2 = R2 / (1 + (s**alpha2 * C2 * R2))
+    Z = Z1 + Z2
+    return Z
+
+def plot_wood_model():
+    new_window = Toplevel()
+    new_window.title("Wood Tissue Model Graph")
+    frame_plots = tk.Frame(new_window)
+    frame_plots.pack(fill=tk.BOTH, expand=True)
+    f = np.logspace(-3, 6, num=500)
+    R2 = 16.5
+    C1 = 769e-6
+    alpha1 = 0.507
+    C2 = 89.29e-6
+    alpha2 = 0.766
+    Z = wood_model_impedance(f, R2, C1, alpha1, C2, alpha2)
+    Z_real = Z.real
+    Z_imag = -Z.imag
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(Z_real, Z_imag, 'm-', label='Wood Tissue Model')
+    ax.set_xlabel("Z'($\Omega$)")
+    ax.set_ylabel("-Z''($\Omega$)")
+    ax.set_xlim([0, 16])
+    ax.set_ylim([0, 8])
+    ax.text(0.5, -7.5,
+            '$R_2 = 16.5 \Omega, C_1 = 769 \mu F, C_2 = 89.29 \mu F, \\alpha_1 = 0.507, \\alpha_2 = 0.766$',
+            fontsize=12, ha='center', bbox=dict(facecolor='white', alpha=0.5))
+    ax.grid(True)
+    canvas = FigureCanvasTkAgg(fig, master=frame_plots)
+    fig.patch.set_alpha(0.0)
+    ax.patch.set_alpha(0.0)
+    canvas.get_tk_widget().configure(bg='white')
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    
 def generate_model_graph():
     selected_model = model_dropdown.get()
     if selected_model == 'Single Cole Model':
@@ -247,7 +287,7 @@ def generate_model_graph():
         plot_double_cole_model()
         pass
     elif selected_model == 'Wood Tissue Model':
-        # Add function call for Wood Tissue Model
+        plot_wood_model()
         pass
     elif selected_model == 'Single Cole Model with Warburg Element':
         # Add function call for Single Cole Model with Warburg Element
