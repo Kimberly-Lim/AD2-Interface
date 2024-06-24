@@ -75,7 +75,7 @@ def plot_data(data):
     if required_columns.issubset(data.columns):
         # Create frequency vs. magnitude plot
         fig1, ax1 = plt.subplots(figsize=(2,1))
-        ax1.plot(data['Frequency(Hz)'], data['Impedance(Ohm)'])
+        ax1.semilogx(data['Frequency(Hz)'], data['Impedance(Ohm)'])
         ax1.set_xlabel('Frequency')
         ax1.set_ylabel('Magnitude')
         ax1.set_title('Frequency vs Magnitude')
@@ -88,7 +88,7 @@ def plot_data(data):
 
         # Create frequency vs. phase plot
         fig2, ax2 = plt.subplots(figsize=(2,1))
-        ax2.plot(data['Frequency(Hz)'], abs(data['Phase(degrees)']))
+        ax2.semilogx(data['Frequency(Hz)'], abs(data['Phase(degrees)']))
         ax2.set_xlabel('Frequency')
         ax2.set_ylabel('Phase')
         ax2.set_title('Frequency vs Phase')
@@ -101,7 +101,7 @@ def plot_data(data):
 
         # Create resistance vs. -reactance plot
         fig3, ax3 = plt.subplots(figsize=(2,1))
-        ax3.plot(data['Absolute Resistance(Ohm)'], abs(data['Absolute Reactance(Ohm)']))
+        ax3.semilogx(data['Absolute Resistance(Ohm)'], abs(data['Absolute Reactance(Ohm)']))
         ax3.set_xlabel('Resistance')
         ax3.set_ylabel('-Reactance')
         ax3.set_title('Resistance vs -Reactance')
