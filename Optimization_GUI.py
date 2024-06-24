@@ -3,6 +3,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter import Toplevel
 import pandas as pd
 import numpy as np
 from pyswarms.single import GlobalBestPSO
@@ -56,7 +57,7 @@ def run_matlab_script():
         eng.ColeReplaceR1WithC(selected_file_path, nargout=0)
         
         # Keep the figures open by preventing MATLAB from closing immediately
-        input("Press Enter to close the MATLAB figures and exit...")
+        # input("Press Enter to close the MATLAB figures and exit...")
         
     except matlab.engine.MatlabExecutionError as e:
         print(f"MATLAB execution error: {e}")
@@ -138,13 +139,131 @@ import_button.grid(column=0, row=0, padx=10, pady=10, sticky='NW')
 optimization_button = tk.Button(frame_settings, text="Optimize", command=run_matlab_script) # implement command 
 optimization_button.grid(column=0, row=1, padx=10, pady=10, sticky='NW')
 
+
+def cole_model_impedance(frequencies, R1, R2, C_alpha, alpha):
+    # s is the complex frequency variable (jω where ω = 2πf)
+    omega = 2 * np.pi * frequencies
+    s = 1j * omega
+    Z = R1 + (R2 - R1) / (1 + (s**alpha * C_alpha * (R2 - R1)))
+    return Z
+
+def plot_cole_model():
+    # Create a new window
+    new_window = Toplevel()
+    new_window.title("Cole Model Graph")
+
+    # Create a frame for the plot
+    frame_plots = tk.Frame(new_window)
+    frame_plots.pack(fill=tk.BOTH, expand=True)
+
+    # Generate Cole model data
+    f = np.logspace(-3, 6, num=500)  # Frequency range from 10^-3 to 10^6 Hz
+    R1 = 1000  # Ohm (1kΩ)
+    R2 = 21000  # Ohm (21kΩ)
+    C_alpha = 25e-9  # Farad (25nF)
+    alpha = 0.75
+
+    Z = cole_model_impedance(f, R1, R2, C_alpha, alpha)
+    Z_real = Z.real
+    Z_imag = -Z.imag  # Negative imaginary part
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(Z_real, Z_imag, 'm-', label='Cole Model')
+    ax.set_xlabel('Real ($\Omega$)')
+    ax.set_ylabel('-Imaginary ($\Omega$)')
+    ax.set_title('Fractional-Order Single Dispersion Cole-Model')
+    ax.text(0.1 * max(Z_real), 0.9 * max(Z_imag),
+            '$R_1 = 1k\Omega$\n$R_2 = 21k\Omega$\n$C_\\alpha = 25nF$\n$\\alpha = 0.75$\n$F = 1mHz : 1MHz$',
+            fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    ax.legend()
+    ax.grid(True)
+
+    # Embed the plot in the Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=frame_plots)
+    fig.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax.patch.set_alpha(0.0)   # Make the axes background transparent
+    canvas.get_tk_widget().configure(bg='white')  # Match the background color
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+def double_cole_model_impedance(frequencies, R1, R2, R3, C_alpha, alpha, C_beta, beta):
+    # s is the complex frequency variable (jω where ω = 2πf)
+    omega = 2 * np.pi * frequencies
+    s = 1j * omega
+    Z1 = R1 + (R2 - R1) / (1 + (s**alpha * C_alpha * (R2 - R1)))
+    Z2 = R3 / (1 + (s**beta * C_beta * R3))
+    Z = Z1 + Z2
+    return Z
+
+def plot_double_cole_model():
+    # Create a new window
+    new_window = Toplevel()
+    new_window.title("Double Dispersion Cole Model Graph")
+
+    # Create a frame for the plot
+    frame_plots = tk.Frame(new_window)
+    frame_plots.pack(fill=tk.BOTH, expand=True)
+
+    # Generate Double Cole model data
+    f = np.logspace(-3, 6, num=500)  # Frequency range from 10^-3 to 10^6 Hz
+    R1 = 42.9  # Ohm
+    R2 = 71.6  # Ohm
+    R3 = 16.5  # Ohm
+    C_alpha = 3.086e-6  # Farad (3.086 µF)
+    alpha = 0.507
+    C_beta = 89.29e-6  # Farad (89.29 µF)
+    beta = 0.766
+
+    Z = double_cole_model_impedance(f, R1, R2, R3, C_alpha, alpha, C_beta, beta)
+    Z_real = Z.real
+    Z_imag = -Z.imag  # Negative imaginary part
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(Z_real, Z_imag, 'm-', label='Double Dispersion Cole Model')
+    ax.set_xlabel('Real ($\Omega$)')
+    ax.set_ylabel('-Imaginary ($\Omega$)')
+    ax.set_title('Double Dispersion Cole-Model')
+    ax.text(0.1 * max(Z_real), 0.9 * max(Z_imag),
+            '$R_1=42.9 \Omega$\n$R_2=71.6 \Omega$\n$R_3=16.5 \Omega$\n$C_\\alpha=3.086 \mu F$\n$C_\\beta=89.29 \mu F$\n$\\alpha=0.507$\n$\\beta=0.766$\n$F=1mHz : 1MHz$',
+            fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+    ax.legend()
+    ax.grid(True)
+
+    # Embed the plot in the Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=frame_plots)
+    fig.patch.set_alpha(0.0)  # Make the figure background transparent
+    ax.patch.set_alpha(0.0)   # Make the axes background transparent
+    canvas.get_tk_widget().configure(bg='white')  # Match the background color
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+def generate_model_graph():
+    selected_model = model_dropdown.get()
+    if selected_model == 'Single Cole Model':
+        plot_cole_model()
+    elif selected_model == 'Double Cole Model':
+        plot_double_cole_model()
+        pass
+    elif selected_model == 'Wood Tissue Model':
+        # Add function call for Wood Tissue Model
+        pass
+    elif selected_model == 'Single Cole Model with Warburg Element':
+        # Add function call for Single Cole Model with Warburg Element
+        pass
+
+# Button to generate model
+model_button = tk.Button(frame_settings, text="Generate Model Graph", command=generate_model_graph)
+model_button.grid(column=5, row=0, padx=5, pady=5, sticky='NW')
+
 # Model label and dropdown
 model_label = tk.Label(frame_settings, text="Model:")
 model_label.grid(column=3, row=0, padx=5, pady=5, sticky='NW')
 n = tk.StringVar
 model_dropdown = ttk.Combobox(frame_settings, textvariable=n)
 model_dropdown.grid(column=4,row=0, padx=5, pady=5, sticky='NW')
-model_dropdown['values'] = ('Cole Model', 'Double Cole Model', 'Wood Tissue Model', 'Single Cole Model with Warburg Element')
+model_dropdown['values'] = ('Single Cole Model', 'Double Cole Model', 'Wood Tissue Model', 'Single Cole Model with Warburg Element')
  
 # Lower Bound Frequency
 slider_label1 = tk.Label(frame_settings, text="Lower Bound Frequency:")
