@@ -152,26 +152,10 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
                              'Absolute Reactance(Ohm)': rgXs, 'Phase(degrees)': rgPhase, 'Real Voltage(volts)': rgRv, 'Imaginary Voltage(volts)': rgIv, 
                               'Real Current(amps)': rgRc, 'Imaginary Current(amps)': rgIc, 'Series Capacitance(F)' : rgSc })
 
-        # # Combine all the information into a single string
-        combined_info = (
-            f"DWF Version: {version.value}\n "
-            f"Steps: {steps}\n "
-            f"Start Frequency (Hz): {startFrequency}\n "
-            f"Stop Frequency (Hz): {stopFrequency}\n "
-            f"Amplitude (V): {amplitude}\n "
-            f"Reference Resistance (Ω): {reference}"
-        )
-
-        # Create a DataFrame with the combined info in one cell
-        data2 = pd.DataFrame({'Impedance Analyzer Configuration': [combined_info]})
-
-        # Concatenate data2 and data
-        combined_data = pd.concat([data2, data], axis=0, ignore_index=True)
-
         # Save the DataFrame to a CSV file
         csv_filename = os.path.join(output_dir, f"Impedance_Data_{now}_{current_time}.csv")
-        combined_data.to_csv(csv_filename, index=False)
-
+        data.to_csv(csv_filename, index=False)
+        
         for iCh in range(2):
             warn = c_int()
             dwf.FDwfAnalogImpedanceStatusWarning(hdwf, c_int(iCh), byref(warn))
@@ -188,7 +172,7 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     dwf.FDwfAnalogImpedanceConfigure(hdwf, c_int(0)) # stop
     dwf.FDwfDeviceClose(hdwf)
 
-    # print(f"Data saved to {combined_info}")
+    print(f"Data saved to {csv_filename}")
 
     # Create the impedance graph
     fig1, ax1 = plt.subplots(figsize=(2,1))
@@ -256,6 +240,9 @@ def makeMeasurement(steps, startFrequency, stopFrequency, reference, amplitude):
     toolbar3 = NavigationToolbar2Tk(canvas3, toolbar_frame3)
     
     total_steps = []
+    # root.after(10000, reset_measurements)  # 10-second delay before reset
+    # reset_measurements()
+
 # end of def makeMeasurement 
 
 # function to reset measurements
@@ -274,17 +261,14 @@ def update_steps(*args):
     global steps_int
     try:
         # Convert the entry to an integer
-        steps_int = int(steps_entry.get())
+        steps_int = int(steps.get())
         if steps_int < 0:
             # raise ValueError("Steps cannot be negative.")
             messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
             print("Updated Steps to:", steps_int)
-            countdown_label.config("00:00")
 
     except ValueError as e:
         print("Invalid input for steps. Please enter a positive integer")
-    
-    return countdown_label.config("00:00")
 
 # Dictionary for frequency values
 frequency_dict = {
@@ -303,26 +287,13 @@ startFrequency = None
 stopFrequency = None 
 amplitude = None
 reference = None
-steps_int = None
-# Initialize global numeric values
-start_numeric_value = frequency_dict["100 Hz"]
-stop_numeric_value = frequency_dict["1 MHz"]
-countdown_label = "00:00"
 
 def on_select_start(event):
     global startFrequency
     global start_numeric_value
-    global stop_numeric_value
-
-    try: 
-        startFrequency = startF_dropdown.get()
-        start_numeric_value = frequency_dict[startFrequency]
-
-        if start_numeric_value > stop_numeric_value or  stop_numeric_value < stop_numeric_value:
-            messagebox.showerror('Frequency Selection Error' , 'Frequency Selection Out of Bounds')
-    
-    except ValueError as e:
-        print("Frequency Selection Out of Bounds")
+    startFrequency = startF_dropdown.get()
+    start_numeric_value = frequency_dict[startFrequency]
+    print(f"Selected: {startFrequency}, Numeric Value: {start_numeric_value}")
 
     return start_numeric_value
 
@@ -330,18 +301,10 @@ def on_select_start(event):
 def on_select_stop(event):
     global stopFrequency
     global stop_numeric_value
-    global stop_numeric_value
-
     stopFrequency = stopF_dropdown.get()
     stop_numeric_value = frequency_dict[stopFrequency]
+    print(f"Selected: {stopFrequency}, Numeric Value: {stop_numeric_value}")
 
-    try:
-        if start_numeric_value > stop_numeric_value:
-            messagebox.showerror('Frequency Selection Error' , 'Frequency Selection Out of Bounds')
-    
-    except ValueError as e:
-        print("Frequency Selection Out of Bounds")
-    
     return stop_numeric_value
 
 # Dictionary for amplitude values
@@ -391,15 +354,6 @@ def on_select_res(event):
 # Function to start the measurement
 def measure():
     global startFrequency, stopFrequency, amplitude, reference
-
-    # Validate the steps input
-    if steps_entry.get().isdigit() and int(steps_entry.get()) > 0:
-        steps_int = int(steps_entry.get())
-    else:
-        messagebox.showerror('Invalid Input', 'Steps must be a positive integer')
-        reset_measurements()
-        return
-
     # Update global variables with the selected values
     steps = int(steps_entry.get())
     startFrequency = on_select_start(startFrequency)
@@ -424,36 +378,39 @@ frame_settings.grid(row=0, column=0, rowspan=2, columnspan=3, padx=10, pady=10, 
 
 # Function to get user input and call_repeatedly
 def start_repeating():
+    # global log_label
+    # reset_measurements()
     try:
         interval = int(measure_interval_entry.get())
         if interval <= 0:
-            raise ValueError("Interval must be greater than 0")
+            raise ValueError("Interval must be positive")
         interval_ms = interval * 60 * 1000
-        start_countdown(interval * 60)
         call_repeatedly(interval_ms)    
+        start_countdown(interval * 60)
     except ValueError as e:
         messagebox.showerror("Invalid Input", str(e))
 
 # Function to repeatedly call desired function
 def call_repeatedly(interval_ms):
     global job
-    start_countdown(interval_ms // 1000)
+    # reset_measurements
     measure()
+    start_countdown(interval_ms // 1000)
     job = root.after(interval_ms, lambda: call_repeatedly(interval_ms))
-
-def stop_repeating(): # doesnt take another measurement, however the countdown timer still operates and step doesnt go to 0
-    global job, countdown_timer, log_label # job: variable to manage repeated task. countdown_timer: manages countdown timer 
-    root.after_cancel(job) # stops repeated task
-    root.after_cancel(countdown_timer) # stops countdown timer but lags and goes back to counting 
-
-    print("Stop button clicked")
-    countdown_label.config(text="testing") # updates but doesnt stay until clicked again? 
-    # log_label =tk.Label(frame_settings, text=f"Step Count Progress: 0")
-    log_label.config(text="Step Count Progress: 0")
+# Function to stop the interval calling
+def stop_repeating():
+    global job, countdown_job
+    if job:
+        root.after_cancel(job)
+        job = None
+    if countdown_job:
+        root.after_cancel(countdown_job)
+        countdown_job = None
+    countdown_label.config(text="00:00")
 
 # Function to handle the countdown
 def start_countdown(seconds):
-    global countdown_timer
+    global countdown_job
     def update_countdown():
         nonlocal seconds
         minutes, secs = divmod(seconds, 60)
@@ -461,8 +418,8 @@ def start_countdown(seconds):
         # countdown_label = tk.Label(frame_settings, text=f"Next call in: {minutes:02}:{secs:02}")       
         if seconds > 0:
             seconds -=1
-            global countdown_timer
-        countdown_timer = root.after(1000, update_countdown)
+            global countdown_job
+            countdown_job = root.after(1000, update_countdown)
     update_countdown()
 
 # Make the main window's grid layout adjustable
@@ -507,8 +464,8 @@ root.rowconfigure(3, weight=2)
 # Initialize global variables
 countdown_label = tk.Label(frame_settings, text="Next call in: 00:00")
 countdown_label.grid(row=6, column=0, padx=2, pady=2, sticky='NW')
-job = None 
-countdown_timer = None
+job = None
+countdown_job = None
 # root.update()
 
 # Configure grid layout for frame_settings
