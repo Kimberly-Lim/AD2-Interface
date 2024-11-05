@@ -1,4 +1,4 @@
-How to run FINAL_AnalogImpedance_Working_ver.py Code:
+How to run AnalogDiscovery2.py Code:
 Code works with the device Analog Discovery 2 
 I used Visual Studio Code, but you can use any IDE you prefer, for example IDLE 
 
