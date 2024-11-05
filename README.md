@@ -18,4 +18,3 @@ a.	Documentation: https://pandas.pydata.org/docs/getting_started/install.html
 a.	Documentation: https://matplotlib.org/stable/install/index.html
 6.	Install numpy 
 a.	Documentation: https://numpy.org/install/
-![image](https://github.com/user-attachments/assets/13fbc44b-fe72-4d2e-bb48-e5a2adf71b1c)
