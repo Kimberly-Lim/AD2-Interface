@@ -1,3 +1,12 @@
+This Python code streamlines the use of the Analog Discovery 2 device by enabling automatic data collection with ease. It features a graphical user interface (GUI) for real-time visualization of each measured interval, ensuring quick validation of processed data.
+
+Key capabilities include:
+
+Automatic and Manual Data Collection: Choose between manual measurements or scheduled data collection at set intervals.
+Data Export: Easily export collected data to a .csv file for further analysis or record-keeping.
+User-Friendly Interface: Simplifies interaction and enhances productivity with an intuitive GUI.
+This tool is designed to make data collection and validation seamless, helping users efficiently harness the capabilities of the Analog Discovery 2.
+
 How to run AnalogDiscovery2.py Code:
 Code works with the device Analog Discovery 2 
 I used Visual Studio Code, but you can use any IDE you prefer, for example IDLE 
