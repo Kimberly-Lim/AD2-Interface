@@ -9,8 +9,6 @@ This tool is designed to make data collection and validation seamless, helping u
 
 
 How to run AnalogDiscovery2.py Code:
-Code works with the device Analog Discovery 2 
-I used Visual Studio Code, but you can use any IDE you prefer, for example IDLE 
 
 Windows/Mac 
 1.	Install Python (I used 3.11.8)  
