@@ -2,10 +2,11 @@ This Python code streamlines the use of the Analog Discovery 2 device by enablin
 
 Key capabilities include:
 
-Automatic and Manual Data Collection: Choose between manual measurements or scheduled data collection at set intervals.
-Data Export: Easily export collected data to a .csv file for further analysis or record-keeping.
-User-Friendly Interface: Simplifies interaction and enhances productivity with an intuitive GUI.
+- Automatic and Manual Data Collection: Choose between manual measurements or scheduled data collection at set intervals.
+- Data Export: Easily export collected data to a .csv file for further analysis or record-keeping.
+- User-Friendly Interface: Simplifies interaction and enhances productivity with an intuitive GUI.
 This tool is designed to make data collection and validation seamless, helping users efficiently harness the capabilities of the Analog Discovery 2.
+
 
 How to run AnalogDiscovery2.py Code:
 Code works with the device Analog Discovery 2 
